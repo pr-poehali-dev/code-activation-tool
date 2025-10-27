@@ -81,6 +81,8 @@ const Index = () => {
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [generatedPasswords, setGeneratedPasswords] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [currentAnalysisStep, setCurrentAnalysisStep] = useState('');
 
   const handleActivate = () => {
     if (VALID_CODES.includes(activationCode.toUpperCase())) {
@@ -104,36 +106,80 @@ const Index = () => {
     const known = knownPasswords.toLowerCase().trim();
 
     const platformPatterns: Record<string, string[]> = {
-      'вконтакте': ['vk', 'vkontakte', 'вк'],
-      'вк': ['vk', 'vkontakte', 'вк'],
-      'instagram': ['insta', 'ig', 'inst'],
-      'telegram': ['tg', 'tlg', 'telegram'],
-      'whatsapp': ['wa', 'whatsapp'],
-      'gmail': ['google', 'gmail', 'mail'],
-      'yandex': ['yandex', 'ya', 'яндекс'],
-      'mail.ru': ['mail', 'mailru'],
-      'facebook': ['fb', 'facebook'],
-      'twitter': ['tw', 'twitter'],
-      'tiktok': ['tiktok', 'tt'],
-      'discord': ['discord', 'ds']
+      'вконтакте': ['vk', 'vkontakte', 'вк', 'vkcom', 'vk.com'],
+      'вк': ['vk', 'vkontakte', 'вк', 'vkcom'],
+      'instagram': ['insta', 'ig', 'inst', 'instagram', 'gram'],
+      'telegram': ['tg', 'tlg', 'telegram', 'tele', 'telega'],
+      'whatsapp': ['wa', 'whatsapp', 'whats', 'wapp'],
+      'gmail': ['google', 'gmail', 'mail', 'gm', 'goog'],
+      'yandex': ['yandex', 'ya', 'яндекс', 'yandexru'],
+      'mail.ru': ['mail', 'mailru', 'мейл'],
+      'facebook': ['fb', 'facebook', 'face'],
+      'twitter': ['tw', 'twitter', 'twit', 'x'],
+      'tiktok': ['tiktok', 'tt', 'tik'],
+      'discord': ['discord', 'ds', 'disc'],
+      'youtube': ['youtube', 'yt', 'you'],
+      'twitch': ['twitch', 'tv'],
+      'steam': ['steam', 'stm'],
+      'playstation': ['ps', 'playstation', 'psn'],
+      'xbox': ['xbox', 'xb'],
+      'apple': ['apple', 'icloud', 'appl']
     };
 
-    const commonPatterns = ['123', '1234', '12345', '123456', '!', '@', '#', '777', '666', '2024'];
-    const years = ['2024', '2025', '2023', '2022', '2021', '2020', '00', '01', '99', '98', '97'];
+    const commonSymbols = ['!', '@', '#', '$', '*', '_', '.', '-', '&'];
+    const years = ['2024', '2025', '2023', '2022', '2021', '2020', '2019', '2018', '00', '01', '02', '03', '99', '98', '97', '96', '95', '10', '11'];
+    const numbers = ['1', '12', '123', '1234', '12345', '123456', '1111', '2222', '777', '666', '69', '420', '007', '111', '222', '333'];
+
+    const leetReplacements: Record<string, string> = {
+      'a': '4', 'e': '3', 'i': '1', 'o': '0', 's': '5', 't': '7', 'l': '1', 'g': '9'
+    };
+
+    const toLeet = (text: string): string => {
+      return text.split('').map(char => leetReplacements[char.toLowerCase()] || char).join('');
+    };
+
+    const capitalize = (text: string): string => {
+      return text.charAt(0).toUpperCase() + text.slice(1);
+    };
+
+    const reverseString = (text: string): string => {
+      return text.split('').reverse().join('');
+    };
 
     if (known && known !== 'незнаю' && known !== 'не знаю') {
       const knownParts = known.split(/[\s,;]+/);
       knownParts.forEach((pwd) => {
         if (pwd.length > 2) {
           passwords.push(pwd);
-          passwords.push(pwd + '!');
-          passwords.push(pwd + '1');
-          passwords.push(pwd + '123');
-          passwords.push(pwd + '@');
+          passwords.push(capitalize(pwd));
+          passwords.push(pwd.toUpperCase());
+          passwords.push(toLeet(pwd));
+          passwords.push(reverseString(pwd));
+          
+          commonSymbols.forEach(sym => {
+            passwords.push(pwd + sym);
+            passwords.push(sym + pwd);
+            passwords.push(pwd + sym + sym);
+          });
+          
+          numbers.forEach(num => {
+            passwords.push(pwd + num);
+            passwords.push(num + pwd);
+            passwords.push(pwd + '_' + num);
+          });
+          
+          years.forEach(year => {
+            passwords.push(pwd + year);
+            passwords.push(year + pwd);
+          });
           
           if (name) {
             passwords.push(name + pwd);
             passwords.push(pwd + name);
+            passwords.push(name + '_' + pwd);
+            passwords.push(pwd + '_' + name);
+            passwords.push(name + '.' + pwd);
+            passwords.push(capitalize(name) + capitalize(pwd));
           }
           
           if (platformLower) {
@@ -143,13 +189,19 @@ const Index = () => {
                 platformPatterns[key].forEach((p) => {
                   passwords.push(pwd + p);
                   passwords.push(p + pwd);
+                  passwords.push(pwd + '_' + p);
+                  passwords.push(p + '_' + pwd);
+                  passwords.push(pwd + '@' + p);
                 });
               }
             });
           }
 
-          const reversed = pwd.split('').reverse().join('');
-          passwords.push(reversed);
+          if (phone) {
+            passwords.push(pwd + phone.slice(-4));
+            passwords.push(pwd + phone.slice(-6));
+            passwords.push(phone.slice(-4) + pwd);
+          }
         }
       });
     }
@@ -160,19 +212,49 @@ const Index = () => {
         if (platformLower.includes(key)) {
           platformPatterns[key].forEach((p) => {
             passwords.push(p);
-            passwords.push(p + '123');
-            passwords.push(p + '@');
+            passwords.push(capitalize(p));
+            passwords.push(p.toUpperCase());
+            passwords.push(toLeet(p));
+            
+            numbers.forEach(num => {
+              passwords.push(p + num);
+              passwords.push(num + p);
+            });
+
+            commonSymbols.forEach(sym => {
+              passwords.push(p + sym);
+              passwords.push(p + '123' + sym);
+            });
             
             if (name) {
               passwords.push(name + p);
               passwords.push(p + name);
               passwords.push(name + '_' + p);
+              passwords.push(capitalize(name) + capitalize(p));
+              passwords.push(name + '.' + p);
+              passwords.push(name + '@' + p);
+              passwords.push(p + '.' + name);
+              
+              const nameParts = name.split(/[\s_-]+/);
+              if (nameParts.length > 1) {
+                passwords.push(nameParts[0] + p);
+                passwords.push(p + nameParts[0]);
+                passwords.push(nameParts[0].charAt(0) + p);
+              }
             }
             
             if (phone) {
               passwords.push(p + phone.slice(-4));
               passwords.push(p + phone.slice(-6));
+              passwords.push(p + '_' + phone.slice(-4));
+              passwords.push(phone.slice(-4) + p);
             }
+
+            years.forEach(year => {
+              passwords.push(p + year);
+              passwords.push(year + p);
+              passwords.push(p + '_' + year);
+            });
           });
         }
       });
@@ -180,23 +262,64 @@ const Index = () => {
 
     if (name) {
       passwords.push(name);
-      passwords.push(name + '123');
-      passwords.push(name + '1234');
-      passwords.push(name.charAt(0).toUpperCase() + name.slice(1));
-      passwords.push(name + '@123');
-      passwords.push(name + '!');
-      passwords.push(name + '2024');
+      passwords.push(capitalize(name));
+      passwords.push(name.toUpperCase());
+      passwords.push(toLeet(name));
+      passwords.push(reverseString(name));
+      
+      numbers.forEach(num => {
+        passwords.push(name + num);
+        passwords.push(num + name);
+        passwords.push(name + '_' + num);
+        passwords.push(capitalize(name) + num);
+      });
+
+      commonSymbols.forEach(sym => {
+        passwords.push(name + sym);
+        passwords.push(name + sym + sym);
+        passwords.push(sym + name);
+      });
+
+      years.forEach(year => {
+        passwords.push(name + year);
+        passwords.push(year + name);
+        passwords.push(name + '_' + year);
+        passwords.push(capitalize(name) + year);
+      });
       
       const nameParts = name.split(/[\s_-]+/);
       if (nameParts.length > 1) {
         passwords.push(nameParts[0] + nameParts[1]);
-        passwords.push(nameParts[0].charAt(0) + nameParts[1]);
         passwords.push(nameParts[1] + nameParts[0]);
+        passwords.push(nameParts[0].charAt(0) + nameParts[1]);
+        passwords.push(nameParts[0] + nameParts[1].charAt(0));
+        passwords.push(capitalize(nameParts[0]) + capitalize(nameParts[1]));
+        
         nameParts.forEach((part) => {
           if (part.length > 2) {
             passwords.push(part);
-            passwords.push(part + '123');
+            passwords.push(capitalize(part));
+            passwords.push(toLeet(part));
+            numbers.forEach(num => {
+              passwords.push(part + num);
+              passwords.push(num + part);
+            });
           }
+        });
+
+        numbers.forEach(num => {
+          passwords.push(nameParts[0] + num + nameParts[1]);
+          passwords.push(nameParts[0] + nameParts[1] + num);
+        });
+      }
+
+      const firstLetters = name.split(/[\s_-]+/).map(p => p.charAt(0)).join('');
+      if (firstLetters.length > 1) {
+        passwords.push(firstLetters);
+        passwords.push(firstLetters.toUpperCase());
+        numbers.forEach(num => {
+          passwords.push(firstLetters + num);
+          passwords.push(firstLetters.toUpperCase() + num);
         });
       }
     }
@@ -206,25 +329,52 @@ const Index = () => {
       passwords.push(phone.slice(-8));
       passwords.push(phone.slice(-4));
       passwords.push(phone.slice(-4) + phone.slice(-4));
+      passwords.push(phone.slice(0, 4) + phone.slice(-4));
+      
       if (name) {
         passwords.push(name + phone.slice(-4));
         passwords.push(name + phone.slice(-2));
         passwords.push(phone.slice(-4) + name);
+        passwords.push(name + '_' + phone.slice(-4));
+        passwords.push(capitalize(name) + phone.slice(-4));
+        passwords.push(name + phone.slice(-6));
       }
+
+      commonSymbols.forEach(sym => {
+        passwords.push(phone.slice(-4) + sym);
+        passwords.push(phone.slice(-6) + sym);
+      });
     }
 
     const words = info.match(/\b\w+\b/g) || [];
     words.forEach((word) => {
       if (word.length > 3) {
         passwords.push(word);
-        passwords.push(word + '123');
-        passwords.push(word.charAt(0).toUpperCase() + word.slice(1));
-        passwords.push(word + '!');
+        passwords.push(capitalize(word));
+        passwords.push(word.toUpperCase());
+        passwords.push(toLeet(word));
+        passwords.push(reverseString(word));
+        
+        numbers.forEach(num => {
+          passwords.push(word + num);
+          passwords.push(num + word);
+        });
+
+        commonSymbols.forEach(sym => {
+          passwords.push(word + sym);
+          passwords.push(word + '123' + sym);
+        });
+
         if (phone) {
           passwords.push(word + phone.slice(-4));
+          passwords.push(phone.slice(-4) + word);
         }
+
         if (name) {
           passwords.push(name + word);
+          passwords.push(word + name);
+          passwords.push(name + '_' + word);
+          passwords.push(capitalize(name) + capitalize(word));
         }
       }
     });
@@ -233,15 +383,20 @@ const Index = () => {
       if (name) {
         passwords.push(name + year);
         passwords.push(year + name);
+        passwords.push(capitalize(name) + year);
       }
       if (platformLower) {
-        passwords.push(platformLower.split(' ')[0] + year);
+        const firstPlatform = platformLower.split(' ')[0];
+        passwords.push(firstPlatform + year);
+        passwords.push(year + firstPlatform);
       }
-    });
-
-    commonPatterns.forEach((pattern) => {
-      if (name) passwords.push(name + pattern);
-      if (platformLower) passwords.push(platformLower.split(' ')[0] + pattern);
+      
+      commonSymbols.forEach(sym => {
+        if (name) {
+          passwords.push(name + year + sym);
+          passwords.push(name + sym + year);
+        }
+      });
     });
 
     const dateMatches = info.match(/\d{2}[.-/]\d{2}[.-/]\d{2,4}/g);
@@ -251,10 +406,20 @@ const Index = () => {
         passwords.push(cleaned);
         passwords.push(cleaned.slice(0, 4));
         passwords.push(cleaned.slice(-4));
+        passwords.push(cleaned.slice(0, 6));
+        passwords.push(cleaned.slice(-6));
+        
         if (name) {
           passwords.push(name + cleaned);
           passwords.push(name + cleaned.slice(-4));
+          passwords.push(cleaned.slice(-4) + name);
+          passwords.push(capitalize(name) + cleaned.slice(-4));
         }
+
+        commonSymbols.forEach(sym => {
+          passwords.push(cleaned + sym);
+          passwords.push(cleaned.slice(-4) + sym);
+        });
       });
     }
 
@@ -263,20 +428,52 @@ const Index = () => {
       emailMatch.forEach((email) => {
         const username = email.split('@')[0];
         passwords.push(username);
-        passwords.push(username + '123');
+        passwords.push(capitalize(username));
+        passwords.push(toLeet(username));
+        
+        numbers.forEach(num => {
+          passwords.push(username + num);
+        });
+
+        commonSymbols.forEach(sym => {
+          passwords.push(username + sym);
+        });
       });
     }
 
     if (platformLower) {
       passwords.push(platformLower);
-      passwords.push(platformLower + '123');
+      passwords.push(capitalize(platformLower));
+      passwords.push(toLeet(platformLower));
+      
+      numbers.forEach(num => {
+        passwords.push(platformLower + num);
+      });
     }
 
-    const uniquePasswords = [...new Set(passwords)].filter(p => p && p.length > 0);
+    const popularPasswords = [
+      'password', 'qwerty', 'admin', 'user', 'letmein', 'welcome', 
+      'monkey', 'dragon', 'master', 'sunshine', 'princess', 'football'
+    ];
+
+    popularPasswords.forEach(pwd => {
+      passwords.push(pwd);
+      passwords.push(capitalize(pwd));
+      passwords.push(toLeet(pwd));
+      numbers.forEach(num => {
+        passwords.push(pwd + num);
+      });
+      if (name) {
+        passwords.push(name + pwd);
+      }
+    });
+
+    const uniquePasswords = [...new Set(passwords)]
+      .filter(p => p && p.length >= 3 && p.length <= 30);
     
     const shuffled = uniquePasswords.sort(() => Math.random() - 0.5);
     
-    return shuffled.slice(0, 15);
+    return shuffled.slice(0, 25);
   };
 
   const handleGeneratePasswords = () => {
@@ -288,18 +485,47 @@ const Index = () => {
     }
 
     setIsGenerating(true);
-    toast.info('ГЛУБОКИЙ АНАЛИЗ ДАННЫХ', {
-      description: 'Сканирование паттернов и генерация...'
-    });
+    setAnalysisProgress(0);
+    setGeneratedPasswords([]);
 
-    setTimeout(() => {
-      const passwords = generatePasswordVariants();
-      setGeneratedPasswords(passwords);
-      setIsGenerating(false);
-      toast.success('АНАЛИЗ ЗАВЕРШЁН', {
-        description: `Сгенерировано ${passwords.length} наиболее вероятных вариантов`
-      });
-    }, 2500);
+    const steps = [
+      'Инициализация нейросети...',
+      'Анализ имени и телефона...',
+      'Поиск паттернов в известных паролях...',
+      'Сканирование платформы...',
+      'Применение leet-замен...',
+      'Генерация комбинаций с символами...',
+      'Анализ дополнительной информации...',
+      'Поиск в базе популярных паролей...',
+      'Создание реверсивных вариантов...',
+      'Финальная оптимизация...'
+    ];
+
+    let currentStep = 0;
+    const stepDuration = 350;
+
+    const interval = setInterval(() => {
+      currentStep++;
+      if (currentStep < steps.length) {
+        setCurrentAnalysisStep(steps[currentStep]);
+        setAnalysisProgress((currentStep / steps.length) * 100);
+      } else {
+        clearInterval(interval);
+        setCurrentAnalysisStep('Завершено!');
+        setAnalysisProgress(100);
+        
+        setTimeout(() => {
+          const passwords = generatePasswordVariants();
+          setGeneratedPasswords(passwords);
+          setIsGenerating(false);
+          toast.success('АНАЛИЗ ЗАВЕРШЁН', {
+            description: `Сгенерировано ${passwords.length} наиболее вероятных вариантов`
+          });
+        }, 500);
+      }
+    }, stepDuration);
+
+    setCurrentAnalysisStep(steps[0]);
   };
 
   const handleCopyPassword = (password: string) => {
@@ -469,6 +695,21 @@ const Index = () => {
                 className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary min-h-24 resize-none"
               />
             </div>
+
+            {isGenerating && (
+              <div className="space-y-3 p-4 bg-primary/5 border border-primary/30 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-mono text-primary">{currentAnalysisStep}</span>
+                  <span className="text-xs font-mono text-muted-foreground">{Math.round(analysisProgress)}%</span>
+                </div>
+                <div className="w-full bg-muted/30 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-300 shadow-[0_0_10px_rgba(0,255,65,0.5)]"
+                    style={{ width: `${analysisProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
             <Button
               onClick={handleGeneratePasswords}
