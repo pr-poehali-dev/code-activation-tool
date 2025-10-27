@@ -1007,9 +1007,9 @@ const Index = () => {
       </Card>
 
       {showPurchaseModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowPurchaseModal(false)}>
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto" onClick={() => setShowPurchaseModal(false)}>
           <Card 
-            className="w-full max-w-lg p-6 bg-card/95 backdrop-blur border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.4)] relative"
+            className="w-full max-w-lg p-6 bg-card/95 backdrop-blur border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.4)] relative my-8"
             onClick={(e) => e.stopPropagation()}
           >
             <Button
