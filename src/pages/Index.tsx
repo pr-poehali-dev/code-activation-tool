@@ -72,30 +72,18 @@ const MatrixRain = () => {
 
 const Index = () => {
   const [isActivated, setIsActivated] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
   const [activationCode, setActivationCode] = useState('');
-  const [showMenu, setShowMenu] = useState(false);
 
   const [ownerName, setOwnerName] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
+  const [platform, setPlatform] = useState('');
+  const [knownPasswords, setKnownPasswords] = useState('');
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [generatedPasswords, setGeneratedPasswords] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  useEffect(() => {
-    const savedActivation = localStorage.getItem('codeHacker_activated');
-    if (savedActivation === 'true') {
-      setIsActivated(true);
-    }
-    const savedMinimized = localStorage.getItem('codeHacker_minimized');
-    if (savedMinimized === 'true') {
-      setIsMinimized(true);
-    }
-  }, []);
-
   const handleActivate = () => {
     if (VALID_CODES.includes(activationCode.toUpperCase())) {
-      localStorage.setItem('codeHacker_activated', 'true');
       setIsActivated(true);
       toast.success('СИСТЕМА АКТИВИРОВАНА', {
         description: 'Доступ разрешен'
@@ -109,23 +97,107 @@ const Index = () => {
 
   const generatePasswordVariants = () => {
     const passwords: string[] = [];
-    const name = ownerName.toLowerCase();
+    const name = ownerName.toLowerCase().trim();
     const phone = ownerPhone.replace(/\D/g, '');
     const info = additionalInfo.toLowerCase();
+    const platformLower = platform.toLowerCase().trim();
+    const known = knownPasswords.toLowerCase().trim();
 
-    const commonPatterns = ['123', '1234', '12345', '123456', '!', '@', '#'];
-    const years = ['2024', '2025', '2023', '2022', '00', '01', '99'];
+    const platformPatterns: Record<string, string[]> = {
+      'вконтакте': ['vk', 'vkontakte', 'вк'],
+      'вк': ['vk', 'vkontakte', 'вк'],
+      'instagram': ['insta', 'ig', 'inst'],
+      'telegram': ['tg', 'tlg', 'telegram'],
+      'whatsapp': ['wa', 'whatsapp'],
+      'gmail': ['google', 'gmail', 'mail'],
+      'yandex': ['yandex', 'ya', 'яндекс'],
+      'mail.ru': ['mail', 'mailru'],
+      'facebook': ['fb', 'facebook'],
+      'twitter': ['tw', 'twitter'],
+      'tiktok': ['tiktok', 'tt'],
+      'discord': ['discord', 'ds']
+    };
+
+    const commonPatterns = ['123', '1234', '12345', '123456', '!', '@', '#', '777', '666', '2024'];
+    const years = ['2024', '2025', '2023', '2022', '2021', '2020', '00', '01', '99', '98', '97'];
+
+    if (known && known !== 'незнаю' && known !== 'не знаю') {
+      const knownParts = known.split(/[\s,;]+/);
+      knownParts.forEach((pwd) => {
+        if (pwd.length > 2) {
+          passwords.push(pwd);
+          passwords.push(pwd + '!');
+          passwords.push(pwd + '1');
+          passwords.push(pwd + '123');
+          passwords.push(pwd + '@');
+          
+          if (name) {
+            passwords.push(name + pwd);
+            passwords.push(pwd + name);
+          }
+          
+          if (platformLower) {
+            const platformKeys = Object.keys(platformPatterns);
+            platformKeys.forEach((key) => {
+              if (platformLower.includes(key)) {
+                platformPatterns[key].forEach((p) => {
+                  passwords.push(pwd + p);
+                  passwords.push(p + pwd);
+                });
+              }
+            });
+          }
+
+          const reversed = pwd.split('').reverse().join('');
+          passwords.push(reversed);
+        }
+      });
+    }
+
+    if (platformLower) {
+      const platformKeys = Object.keys(platformPatterns);
+      platformKeys.forEach((key) => {
+        if (platformLower.includes(key)) {
+          platformPatterns[key].forEach((p) => {
+            passwords.push(p);
+            passwords.push(p + '123');
+            passwords.push(p + '@');
+            
+            if (name) {
+              passwords.push(name + p);
+              passwords.push(p + name);
+              passwords.push(name + '_' + p);
+            }
+            
+            if (phone) {
+              passwords.push(p + phone.slice(-4));
+              passwords.push(p + phone.slice(-6));
+            }
+          });
+        }
+      });
+    }
 
     if (name) {
       passwords.push(name);
       passwords.push(name + '123');
+      passwords.push(name + '1234');
       passwords.push(name.charAt(0).toUpperCase() + name.slice(1));
       passwords.push(name + '@123');
+      passwords.push(name + '!');
+      passwords.push(name + '2024');
       
-      const nameParts = name.split(' ');
+      const nameParts = name.split(/[\s_-]+/);
       if (nameParts.length > 1) {
         passwords.push(nameParts[0] + nameParts[1]);
         passwords.push(nameParts[0].charAt(0) + nameParts[1]);
+        passwords.push(nameParts[1] + nameParts[0]);
+        nameParts.forEach((part) => {
+          if (part.length > 2) {
+            passwords.push(part);
+            passwords.push(part + '123');
+          }
+        });
       }
     }
 
@@ -133,9 +205,11 @@ const Index = () => {
       passwords.push(phone.slice(-6));
       passwords.push(phone.slice(-8));
       passwords.push(phone.slice(-4));
+      passwords.push(phone.slice(-4) + phone.slice(-4));
       if (name) {
         passwords.push(name + phone.slice(-4));
         passwords.push(name + phone.slice(-2));
+        passwords.push(phone.slice(-4) + name);
       }
     }
 
@@ -145,18 +219,29 @@ const Index = () => {
         passwords.push(word);
         passwords.push(word + '123');
         passwords.push(word.charAt(0).toUpperCase() + word.slice(1));
+        passwords.push(word + '!');
         if (phone) {
           passwords.push(word + phone.slice(-4));
+        }
+        if (name) {
+          passwords.push(name + word);
         }
       }
     });
 
     years.forEach((year) => {
-      if (name) passwords.push(name + year);
+      if (name) {
+        passwords.push(name + year);
+        passwords.push(year + name);
+      }
+      if (platformLower) {
+        passwords.push(platformLower.split(' ')[0] + year);
+      }
     });
 
     commonPatterns.forEach((pattern) => {
       if (name) passwords.push(name + pattern);
+      if (platformLower) passwords.push(platformLower.split(' ')[0] + pattern);
     });
 
     const dateMatches = info.match(/\d{2}[.-/]\d{2}[.-/]\d{2,4}/g);
@@ -164,19 +249,38 @@ const Index = () => {
       dateMatches.forEach((date) => {
         const cleaned = date.replace(/\D/g, '');
         passwords.push(cleaned);
-        if (name) passwords.push(name + cleaned);
+        passwords.push(cleaned.slice(0, 4));
+        passwords.push(cleaned.slice(-4));
+        if (name) {
+          passwords.push(name + cleaned);
+          passwords.push(name + cleaned.slice(-4));
+        }
       });
+    }
+
+    const emailMatch = info.match(/[\w.-]+@[\w.-]+\.\w+/g);
+    if (emailMatch) {
+      emailMatch.forEach((email) => {
+        const username = email.split('@')[0];
+        passwords.push(username);
+        passwords.push(username + '123');
+      });
+    }
+
+    if (platformLower) {
+      passwords.push(platformLower);
+      passwords.push(platformLower + '123');
     }
 
     const uniquePasswords = [...new Set(passwords)].filter(p => p && p.length > 0);
     
     const shuffled = uniquePasswords.sort(() => Math.random() - 0.5);
     
-    return shuffled.slice(0, 10);
+    return shuffled.slice(0, 15);
   };
 
   const handleGeneratePasswords = () => {
-    if (!ownerName && !ownerPhone && !additionalInfo) {
+    if (!ownerName && !ownerPhone && !additionalInfo && !platform && (!knownPasswords || knownPasswords.toLowerCase() === 'незнаю')) {
       toast.error('ОШИБКА', {
         description: 'Заполните хотя бы одно поле с информацией'
       });
@@ -184,18 +288,18 @@ const Index = () => {
     }
 
     setIsGenerating(true);
-    toast.info('АНАЛИЗ ДАННЫХ', {
-      description: 'Генерация вероятных паролей...'
+    toast.info('ГЛУБОКИЙ АНАЛИЗ ДАННЫХ', {
+      description: 'Сканирование паттернов и генерация...'
     });
 
     setTimeout(() => {
       const passwords = generatePasswordVariants();
       setGeneratedPasswords(passwords);
       setIsGenerating(false);
-      toast.success('ГЕНЕРАЦИЯ ЗАВЕРШЕНА', {
-        description: `Создано ${passwords.length} вариантов`
+      toast.success('АНАЛИЗ ЗАВЕРШЁН', {
+        description: `Сгенерировано ${passwords.length} наиболее вероятных вариантов`
       });
-    }, 1500);
+    }, 2500);
   };
 
   const handleCopyPassword = (password: string) => {
@@ -235,6 +339,7 @@ const Index = () => {
                 placeholder="КОД АКТИВАЦИИ"
                 value={activationCode}
                 onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => e.key === 'Enter' && handleActivate()}
                 className="text-center font-mono text-lg tracking-widest bg-input/50 border-primary/30 focus:border-primary text-primary placeholder:text-muted-foreground"
                 maxLength={10}
               />
@@ -257,70 +362,12 @@ const Index = () => {
                   className="w-full border-secondary text-secondary hover:bg-secondary/10 font-mono"
                 >
                   <Icon name="ShoppingCart" className="mr-2" size={18} />
-                  КУПИТЬ КОД
+                  КУПИТЬ КОД — 199₽
                 </Button>
               </div>
             </div>
           </div>
         </Card>
-      </div>
-    );
-  }
-
-  if (isMinimized) {
-    return (
-      <div className="fixed top-4 right-4 z-50">
-        <div className="relative">
-          <Button
-            onClick={() => setShowMenu(!showMenu)}
-            className="w-12 h-12 rounded-full bg-primary/90 hover:bg-primary shadow-[0_0_20px_rgba(0,255,65,0.6)] animate-pulse-glow"
-          >
-            <Icon name="Terminal" className="text-primary-foreground" size={24} />
-          </Button>
-
-          {showMenu && (
-            <Card className="absolute top-14 right-0 w-48 p-2 bg-card/95 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)]">
-              <div className="space-y-1">
-                <Button
-                  onClick={() => {
-                    setIsMinimized(false);
-                    localStorage.setItem('codeHacker_minimized', 'false');
-                  }}
-                  variant="ghost"
-                  className="w-full justify-start text-sm font-mono hover:bg-primary/10 hover:text-primary"
-                >
-                  <Icon name="Maximize2" className="mr-2" size={16} />
-                  РАЗВЕРНУТЬ
-                </Button>
-                <Button
-                  onClick={() => {
-                    setGeneratedPasswords([]);
-                    setShowMenu(false);
-                  }}
-                  variant="ghost"
-                  className="w-full justify-start text-sm font-mono hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Icon name="Trash2" className="mr-2" size={16} />
-                  ОЧИСТИТЬ
-                </Button>
-                <Button
-                  onClick={() => {
-                    localStorage.removeItem('codeHacker_activated');
-                    localStorage.removeItem('codeHacker_minimized');
-                    setIsActivated(false);
-                    setIsMinimized(false);
-                    setShowMenu(false);
-                  }}
-                  variant="ghost"
-                  className="w-full justify-start text-sm font-mono hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Icon name="X" className="mr-2" size={16} />
-                  ВЫХОД
-                </Button>
-              </div>
-            </Card>
-          )}
-        </div>
       </div>
     );
   }
@@ -338,23 +385,23 @@ const Index = () => {
               </div>
               <div>
                 <h1 className="text-xl font-bold text-primary matrix-glow">
-                  PASSWORD ANALYZER v3.0
+                  PASSWORD ANALYZER v4.0
                 </h1>
                 <p className="text-xs text-muted-foreground font-mono">
-                  ИНТЕЛЛЕКТУАЛЬНАЯ ГЕНЕРАЦИЯ ПАРОЛЕЙ
+                  ИНТЕЛЛЕКТУАЛЬНАЯ СИСТЕМА ПОДБОРА ПАРОЛЕЙ
                 </p>
               </div>
             </div>
             <Button
               onClick={() => {
-                setIsMinimized(true);
-                localStorage.setItem('codeHacker_minimized', 'true');
+                setIsActivated(false);
+                setActivationCode('');
               }}
               variant="ghost"
               size="icon"
-              className="hover:bg-primary/10"
+              className="hover:bg-destructive/10"
             >
-              <Icon name="Minimize2" className="text-primary" size={20} />
+              <Icon name="LogOut" className="text-destructive" size={20} />
             </Button>
           </div>
 
@@ -387,10 +434,36 @@ const Index = () => {
 
             <div>
               <label className="text-sm font-mono text-muted-foreground mb-2 block">
+                ПЛАТФОРМА / СЕРВИС
+              </label>
+              <Input
+                type="text"
+                placeholder="ВКонтакте, Instagram, Telegram, Gmail..."
+                value={platform}
+                onChange={(e) => setPlatform(e.target.value)}
+                className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-mono text-muted-foreground mb-2 block">
+                ИЗВЕСТНЫЕ ПАРОЛИ
+              </label>
+              <Input
+                type="text"
+                placeholder='Если не знаете, напишите "Незнаю"'
+                value={knownPasswords}
+                onChange={(e) => setKnownPasswords(e.target.value)}
+                className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-mono text-muted-foreground mb-2 block">
                 ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ
               </label>
               <Textarea
-                placeholder="Дата рождения, город, кличка питомца, любимая команда, важные даты..."
+                placeholder="Дата рождения, город, кличка питомца, любимая команда, важные даты, email..."
                 value={additionalInfo}
                 onChange={(e) => setAdditionalInfo(e.target.value)}
                 className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary min-h-24 resize-none"
@@ -405,12 +478,12 @@ const Index = () => {
               {isGenerating ? (
                 <>
                   <Icon name="Loader2" className="mr-2 animate-spin" size={18} />
-                  АНАЛИЗ...
+                  ГЛУБОКИЙ АНАЛИЗ...
                 </>
               ) : (
                 <>
                   <Icon name="Cpu" className="mr-2" size={18} />
-                  СГЕНЕРИРОВАТЬ ПАРОЛИ
+                  ЗАПУСТИТЬ АНАЛИЗ
                 </>
               )}
             </Button>
@@ -420,7 +493,7 @@ const Index = () => {
             <div className="space-y-3 pt-4 border-t border-border/50">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-mono text-primary matrix-glow">
-                  ВЕРОЯТНЫЕ ПАРОЛИ ({generatedPasswords.length})
+                  НАИБОЛЕЕ ВЕРОЯТНЫЕ ПАРОЛИ ({generatedPasswords.length})
                 </h3>
                 <Button
                   onClick={handleGeneratePasswords}
@@ -439,11 +512,11 @@ const Index = () => {
                     key={index}
                     className="flex items-center justify-between bg-muted/30 rounded p-3 border border-primary/20 hover:border-primary/50 transition-colors group"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-secondary w-6">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <span className="text-xs font-mono text-secondary w-6 flex-shrink-0">
                         #{index + 1}
                       </span>
-                      <span className="font-mono text-primary text-base">
+                      <span className="font-mono text-primary text-base truncate">
                         {password}
                       </span>
                     </div>
@@ -451,7 +524,7 @@ const Index = () => {
                       onClick={() => handleCopyPassword(password)}
                       variant="ghost"
                       size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10 flex-shrink-0"
                     >
                       <Icon name="Copy" className="text-primary" size={16} />
                     </Button>
@@ -468,7 +541,7 @@ const Index = () => {
               className="w-full border-secondary text-secondary hover:bg-secondary/10 font-mono"
             >
               <Icon name="ShoppingCart" className="mr-2" size={18} />
-              КУПИТЬ КОД АКТИВАЦИИ
+              КУПИТЬ КОД АКТИВАЦИИ — 199₽
             </Button>
           </div>
         </div>
