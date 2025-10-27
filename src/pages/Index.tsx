@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 
@@ -72,19 +73,14 @@ const MatrixRain = () => {
 const Index = () => {
   const [isActivated, setIsActivated] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-
-  useEffect(() => {
-    const savedMinimized = localStorage.getItem('codeHacker_minimized');
-    if (savedMinimized === 'true') {
-      setIsMinimized(true);
-    }
-  }, []);
   const [activationCode, setActivationCode] = useState('');
-  const [isRunning, setIsRunning] = useState(false);
-  const [currentCode, setCurrentCode] = useState('000000');
-  const [targetCode, setTargetCode] = useState('');
-  const [attempts, setAttempts] = useState(0);
   const [showMenu, setShowMenu] = useState(false);
+
+  const [ownerName, setOwnerName] = useState('');
+  const [ownerPhone, setOwnerPhone] = useState('');
+  const [additionalInfo, setAdditionalInfo] = useState('');
+  const [generatedPasswords, setGeneratedPasswords] = useState<string[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     const savedActivation = localStorage.getItem('codeHacker_activated');
@@ -111,43 +107,101 @@ const Index = () => {
     }
   };
 
-  const generateRandomCode = () => {
-    return Math.floor(Math.random() * 1000000)
-      .toString()
-      .padStart(6, '0');
+  const generatePasswordVariants = () => {
+    const passwords: string[] = [];
+    const name = ownerName.toLowerCase();
+    const phone = ownerPhone.replace(/\D/g, '');
+    const info = additionalInfo.toLowerCase();
+
+    const commonPatterns = ['123', '1234', '12345', '123456', '!', '@', '#'];
+    const years = ['2024', '2025', '2023', '2022', '00', '01', '99'];
+
+    if (name) {
+      passwords.push(name);
+      passwords.push(name + '123');
+      passwords.push(name.charAt(0).toUpperCase() + name.slice(1));
+      passwords.push(name + '@123');
+      
+      const nameParts = name.split(' ');
+      if (nameParts.length > 1) {
+        passwords.push(nameParts[0] + nameParts[1]);
+        passwords.push(nameParts[0].charAt(0) + nameParts[1]);
+      }
+    }
+
+    if (phone) {
+      passwords.push(phone.slice(-6));
+      passwords.push(phone.slice(-8));
+      passwords.push(phone.slice(-4));
+      if (name) {
+        passwords.push(name + phone.slice(-4));
+        passwords.push(name + phone.slice(-2));
+      }
+    }
+
+    const words = info.match(/\b\w+\b/g) || [];
+    words.forEach((word) => {
+      if (word.length > 3) {
+        passwords.push(word);
+        passwords.push(word + '123');
+        passwords.push(word.charAt(0).toUpperCase() + word.slice(1));
+        if (phone) {
+          passwords.push(word + phone.slice(-4));
+        }
+      }
+    });
+
+    years.forEach((year) => {
+      if (name) passwords.push(name + year);
+    });
+
+    commonPatterns.forEach((pattern) => {
+      if (name) passwords.push(name + pattern);
+    });
+
+    const dateMatches = info.match(/\d{2}[.-/]\d{2}[.-/]\d{2,4}/g);
+    if (dateMatches) {
+      dateMatches.forEach((date) => {
+        const cleaned = date.replace(/\D/g, '');
+        passwords.push(cleaned);
+        if (name) passwords.push(name + cleaned);
+      });
+    }
+
+    const uniquePasswords = [...new Set(passwords)].filter(p => p && p.length > 0);
+    
+    const shuffled = uniquePasswords.sort(() => Math.random() - 0.5);
+    
+    return shuffled.slice(0, 10);
   };
 
-  useEffect(() => {
-    if (!isRunning || !targetCode) return;
-
-    const interval = setInterval(() => {
-      setAttempts((prev) => prev + 1);
-      const newCode = generateRandomCode();
-      setCurrentCode(newCode);
-
-      if (newCode === targetCode) {
-        setIsRunning(false);
-        toast.success('КОД ВЗЛОМАН!', {
-          description: `Найдено совпадение: ${newCode}`,
-          duration: 5000
-        });
-      }
-    }, 10);
-
-    return () => clearInterval(interval);
-  }, [isRunning, targetCode]);
-
-  const handleStartCracking = () => {
-    if (!targetCode || targetCode.length !== 6) {
+  const handleGeneratePasswords = () => {
+    if (!ownerName && !ownerPhone && !additionalInfo) {
       toast.error('ОШИБКА', {
-        description: 'Введите 6-значный код'
+        description: 'Заполните хотя бы одно поле с информацией'
       });
       return;
     }
-    setIsRunning(true);
-    setAttempts(0);
-    toast.info('ЗАПУСК СИСТЕМЫ ПОДБОРА', {
-      description: 'Начало перебора кодов'
+
+    setIsGenerating(true);
+    toast.info('АНАЛИЗ ДАННЫХ', {
+      description: 'Генерация вероятных паролей...'
+    });
+
+    setTimeout(() => {
+      const passwords = generatePasswordVariants();
+      setGeneratedPasswords(passwords);
+      setIsGenerating(false);
+      toast.success('ГЕНЕРАЦИЯ ЗАВЕРШЕНА', {
+        description: `Создано ${passwords.length} вариантов`
+      });
+    }, 1500);
+  };
+
+  const handleCopyPassword = (password: string) => {
+    navigator.clipboard.writeText(password);
+    toast.success('СКОПИРОВАНО', {
+      description: password
     });
   };
 
@@ -240,14 +294,14 @@ const Index = () => {
                 </Button>
                 <Button
                   onClick={() => {
-                    setIsRunning(false);
+                    setGeneratedPasswords([]);
                     setShowMenu(false);
                   }}
                   variant="ghost"
                   className="w-full justify-start text-sm font-mono hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <Icon name="Square" className="mr-2" size={16} />
-                  ОСТАНОВИТЬ
+                  <Icon name="Trash2" className="mr-2" size={16} />
+                  ОЧИСТИТЬ
                 </Button>
                 <Button
                   onClick={() => {
@@ -275,19 +329,19 @@ const Index = () => {
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
       <MatrixRain />
 
-      <Card className="w-full max-w-2xl p-8 bg-card/90 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)] relative z-10">
+      <Card className="w-full max-w-3xl p-8 bg-card/90 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)] relative z-10 max-h-[90vh] overflow-y-auto">
         <div className="space-y-6">
           <div className="flex items-center justify-between border-b border-border/50 pb-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded bg-primary/20 flex items-center justify-center">
-                <Icon name="Terminal" className="text-primary w-5 h-5" />
+                <Icon name="Brain" className="text-primary w-5 h-5" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-primary matrix-glow">
-                  CODE CRACKER v2.0
+                  PASSWORD ANALYZER v3.0
                 </h1>
                 <p className="text-xs text-muted-foreground font-mono">
-                  СИСТЕМА ПОДБОРА КОДОВ
+                  ИНТЕЛЛЕКТУАЛЬНАЯ ГЕНЕРАЦИЯ ПАРОЛЕЙ
                 </p>
               </div>
             </div>
@@ -304,84 +358,118 @@ const Index = () => {
             </Button>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid gap-4">
             <div>
               <label className="text-sm font-mono text-muted-foreground mb-2 block">
-                ЦЕЛЕВОЙ КОД (6 ЦИФР)
+                ИМЯ ВЛАДЕЛЬЦА
               </label>
               <Input
                 type="text"
-                placeholder="123456"
-                value={targetCode}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '').slice(0, 6);
-                  setTargetCode(value);
-                }}
-                disabled={isRunning}
-                className="text-center font-mono text-2xl tracking-widest bg-input/50 border-primary/30 focus:border-primary text-primary"
-                maxLength={6}
+                placeholder="Иван Петров"
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary"
               />
             </div>
 
-            <div className="bg-muted/30 rounded-lg p-6 border border-primary/20">
-              <div className="text-center space-y-2">
-                <p className="text-xs font-mono text-muted-foreground">
-                  ТЕКУЩИЙ ПЕРЕБОР
-                </p>
-                <div className="text-5xl font-bold font-mono text-primary matrix-glow tracking-wider">
-                  {currentCode}
-                </div>
-                <div className="flex justify-center gap-8 pt-3">
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground font-mono">ПОПЫТОК</p>
-                    <p className="text-xl font-bold text-secondary font-mono">
-                      {attempts.toLocaleString()}
-                    </p>
+            <div>
+              <label className="text-sm font-mono text-muted-foreground mb-2 block">
+                НОМЕР ТЕЛЕФОНА
+              </label>
+              <Input
+                type="text"
+                placeholder="+7 999 123 45 67"
+                value={ownerPhone}
+                onChange={(e) => setOwnerPhone(e.target.value)}
+                className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-mono text-muted-foreground mb-2 block">
+                ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ
+              </label>
+              <Textarea
+                placeholder="Дата рождения, город, кличка питомца, любимая команда, важные даты..."
+                value={additionalInfo}
+                onChange={(e) => setAdditionalInfo(e.target.value)}
+                className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary min-h-24 resize-none"
+              />
+            </div>
+
+            <Button
+              onClick={handleGeneratePasswords}
+              disabled={isGenerating}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/80 font-mono shadow-[0_0_20px_rgba(0,255,65,0.5)]"
+            >
+              {isGenerating ? (
+                <>
+                  <Icon name="Loader2" className="mr-2 animate-spin" size={18} />
+                  АНАЛИЗ...
+                </>
+              ) : (
+                <>
+                  <Icon name="Cpu" className="mr-2" size={18} />
+                  СГЕНЕРИРОВАТЬ ПАРОЛИ
+                </>
+              )}
+            </Button>
+          </div>
+
+          {generatedPasswords.length > 0 && (
+            <div className="space-y-3 pt-4 border-t border-border/50">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-mono text-primary matrix-glow">
+                  ВЕРОЯТНЫЕ ПАРОЛИ ({generatedPasswords.length})
+                </h3>
+                <Button
+                  onClick={handleGeneratePasswords}
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs font-mono hover:bg-primary/10 hover:text-primary"
+                >
+                  <Icon name="RefreshCw" className="mr-1" size={14} />
+                  ПЕРЕСОЗДАТЬ
+                </Button>
+              </div>
+
+              <div className="grid gap-2">
+                {generatedPasswords.map((password, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between bg-muted/30 rounded p-3 border border-primary/20 hover:border-primary/50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-mono text-secondary w-6">
+                        #{index + 1}
+                      </span>
+                      <span className="font-mono text-primary text-base">
+                        {password}
+                      </span>
+                    </div>
+                    <Button
+                      onClick={() => handleCopyPassword(password)}
+                      variant="ghost"
+                      size="sm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10"
+                    >
+                      <Icon name="Copy" className="text-primary" size={16} />
+                    </Button>
                   </div>
-                  <div className="text-center">
-                    <p className="text-xs text-muted-foreground font-mono">СТАТУС</p>
-                    <p className={`text-xl font-bold font-mono ${isRunning ? 'text-primary animate-pulse-glow' : 'text-muted-foreground'}`}>
-                      {isRunning ? 'РАБОТА' : 'ОЖИДАНИЕ'}
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
+          )}
 
-            <div className="flex gap-3">
-              <Button
-                onClick={handleStartCracking}
-                disabled={isRunning || !targetCode}
-                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/80 font-mono shadow-[0_0_20px_rgba(0,255,65,0.5)]"
-              >
-                <Icon name="Play" className="mr-2" size={18} />
-                ЗАПУСТИТЬ
-              </Button>
-              <Button
-                onClick={() => {
-                  setIsRunning(false);
-                  setAttempts(0);
-                  setCurrentCode('000000');
-                }}
-                disabled={!isRunning}
-                variant="outline"
-                className="flex-1 border-destructive text-destructive hover:bg-destructive/10 font-mono"
-              >
-                <Icon name="Square" className="mr-2" size={18} />
-                ОСТАНОВИТЬ
-              </Button>
-            </div>
-
-            <div className="pt-4 border-t border-border/50">
-              <Button
-                onClick={handleBuyCode}
-                variant="outline"
-                className="w-full border-secondary text-secondary hover:bg-secondary/10 font-mono"
-              >
-                <Icon name="ShoppingCart" className="mr-2" size={18} />
-                КУПИТЬ КОД АКТИВАЦИИ
-              </Button>
-            </div>
+          <div className="pt-4 border-t border-border/50">
+            <Button
+              onClick={handleBuyCode}
+              variant="outline"
+              className="w-full border-secondary text-secondary hover:bg-secondary/10 font-mono"
+            >
+              <Icon name="ShoppingCart" className="mr-2" size={18} />
+              КУПИТЬ КОД АКТИВАЦИИ
+            </Button>
           </div>
         </div>
       </Card>
