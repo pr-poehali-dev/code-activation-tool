@@ -61,12 +61,27 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				matrix: {
+					green: '#00FF41',
+					dark: '#0D1117',
+					cyan: '#00D9FF',
+					red: '#FF0055'
+				},
+				matrix: {
+					green: '#00FF41',
+					dark: '#0D1117',
+					cyan: '#00D9FF',
+					red: '#FF0055'
 				}
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			fontFamily: {
+				mono: ['IBM Plex Mono', 'monospace']
 			},
 			keyframes: {
 				'accordion-down': {
@@ -84,11 +99,27 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'matrix-rain': {
+					'0%': { transform: 'translateY(-100%)', opacity: '0' },
+					'50%': { opacity: '1' },
+					'100%': { transform: 'translateY(100vh)', opacity: '0' }
+				},
+				'pulse-glow': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.5' }
+				},
+				'code-scroll': {
+					'0%': { transform: 'translateY(0)' },
+					'100%': { transform: 'translateY(-50%)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'matrix-rain': 'matrix-rain 3s linear infinite',
+				'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
+				'code-scroll': 'code-scroll 20s linear infinite'
 			}
 		}
 	},
