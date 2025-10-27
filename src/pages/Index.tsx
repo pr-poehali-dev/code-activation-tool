@@ -80,9 +80,11 @@ const Index = () => {
   const [knownPasswords, setKnownPasswords] = useState('');
   const [additionalInfo, setAdditionalInfo] = useState('');
   const [generatedPasswords, setGeneratedPasswords] = useState<string[]>([]);
+  const [pinnedPassword, setPinnedPassword] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [currentAnalysisStep, setCurrentAnalysisStep] = useState('');
+  const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
   const handleActivate = () => {
     if (VALID_CODES.includes(activationCode.toUpperCase())) {
@@ -97,13 +99,17 @@ const Index = () => {
     }
   };
 
-  const generatePasswordVariants = () => {
+  const generatePasswordVariants = async () => {
     const passwords: string[] = [];
     const name = ownerName.toLowerCase().trim();
     const phone = ownerPhone.replace(/\D/g, '');
     const info = additionalInfo.toLowerCase();
     const platformLower = platform.toLowerCase().trim();
     const known = knownPasswords.toLowerCase().trim();
+
+    if (pinnedPassword) {
+      passwords.push(pinnedPassword);
+    }
 
     const platformPatterns: Record<string, string[]> = {
       'вконтакте': ['vk', 'vkontakte', 'вк', 'vkcom', 'vk.com'],
@@ -145,6 +151,96 @@ const Index = () => {
     const reverseString = (text: string): string => {
       return text.split('').reverse().join('');
     };
+
+    const infoWords = info.match(/\b\w+\b/g) || [];
+    const priorityWords = infoWords.filter(w => w.length > 3);
+
+    priorityWords.forEach((word) => {
+      passwords.push(word);
+      passwords.push(capitalize(word));
+      passwords.push(word.toUpperCase());
+      passwords.push(toLeet(word));
+      passwords.push(reverseString(word));
+
+      numbers.forEach(num => {
+        passwords.push(word + num);
+        passwords.push(num + word);
+        passwords.push(capitalize(word) + num);
+      });
+
+      commonSymbols.forEach(sym => {
+        passwords.push(word + sym);
+        passwords.push(word + sym + sym);
+        passwords.push(capitalize(word) + sym);
+        numbers.forEach(num => {
+          passwords.push(word + num + sym);
+          passwords.push(word + sym + num);
+        });
+      });
+
+      years.forEach(year => {
+        passwords.push(word + year);
+        passwords.push(year + word);
+        passwords.push(capitalize(word) + year);
+        passwords.push(word + '_' + year);
+        commonSymbols.forEach(sym => {
+          passwords.push(word + year + sym);
+        });
+      });
+
+      if (phone) {
+        passwords.push(word + phone.slice(-4));
+        passwords.push(word + phone.slice(-6));
+        passwords.push(phone.slice(-4) + word);
+        passwords.push(word + '_' + phone.slice(-4));
+      }
+
+      if (name) {
+        passwords.push(word + name);
+        passwords.push(name + word);
+        passwords.push(word + '_' + name);
+        passwords.push(capitalize(word) + capitalize(name));
+        passwords.push(word + '.' + name);
+        passwords.push(name + '.' + word);
+      }
+
+      if (platformLower) {
+        const platformKeys = Object.keys(platformPatterns);
+        platformKeys.forEach((key) => {
+          if (platformLower.includes(key)) {
+            platformPatterns[key].forEach((p) => {
+              passwords.push(word + p);
+              passwords.push(p + word);
+              passwords.push(word + '_' + p);
+              passwords.push(capitalize(word) + capitalize(p));
+            });
+          }
+        });
+      }
+
+      priorityWords.forEach((word2) => {
+        if (word !== word2 && word2.length > 3) {
+          passwords.push(word + word2);
+          passwords.push(word + '_' + word2);
+          passwords.push(capitalize(word) + capitalize(word2));
+          numbers.forEach(num => {
+            passwords.push(word + word2 + num);
+            passwords.push(word + num + word2);
+          });
+        }
+      });
+
+      if (pinnedPassword && !pinnedPassword.includes(word)) {
+        passwords.push(pinnedPassword + word);
+        passwords.push(word + pinnedPassword);
+        passwords.push(pinnedPassword + '_' + word);
+        passwords.push(word + '_' + pinnedPassword);
+        numbers.forEach(num => {
+          passwords.push(pinnedPassword + word + num);
+          passwords.push(word + pinnedPassword + num);
+        });
+      }
+    });
 
     if (known && known !== 'незнаю' && known !== 'не знаю') {
       const knownParts = known.split(/[\s,;]+/);
@@ -348,7 +444,7 @@ const Index = () => {
 
     const words = info.match(/\b\w+\b/g) || [];
     words.forEach((word) => {
-      if (word.length > 3) {
+      if (word.length > 3 && !priorityWords.includes(word)) {
         passwords.push(word);
         passwords.push(capitalize(word));
         passwords.push(word.toUpperCase());
@@ -468,16 +564,71 @@ const Index = () => {
       }
     });
 
+    if (pinnedPassword) {
+      commonSymbols.forEach(sym => {
+        passwords.push(pinnedPassword + sym);
+        passwords.push(sym + pinnedPassword);
+        passwords.push(pinnedPassword + sym + sym);
+      });
+
+      numbers.forEach(num => {
+        passwords.push(pinnedPassword + num);
+        passwords.push(num + pinnedPassword);
+        passwords.push(pinnedPassword + '_' + num);
+        commonSymbols.forEach(sym => {
+          passwords.push(pinnedPassword + num + sym);
+          passwords.push(pinnedPassword + sym + num);
+        });
+      });
+
+      years.forEach(year => {
+        passwords.push(pinnedPassword + year);
+        passwords.push(year + pinnedPassword);
+      });
+
+      passwords.push(capitalize(pinnedPassword));
+      passwords.push(pinnedPassword.toUpperCase());
+      passwords.push(toLeet(pinnedPassword));
+      passwords.push(reverseString(pinnedPassword));
+    }
+
     const uniquePasswords = [...new Set(passwords)]
-      .filter(p => p && p.length >= 3 && p.length <= 30);
+      .filter(p => p && p.length >= 4 && p.length <= 30);
     
-    const shuffled = uniquePasswords.sort(() => Math.random() - 0.5);
+    const prioritized = uniquePasswords.sort((a, b) => {
+      let scoreA = 0;
+      let scoreB = 0;
+
+      if (pinnedPassword) {
+        if (a.includes(pinnedPassword)) scoreA += 1000;
+        if (b.includes(pinnedPassword)) scoreB += 1000;
+      }
+
+      priorityWords.forEach(word => {
+        if (a.toLowerCase().includes(word)) scoreA += 100;
+        if (b.toLowerCase().includes(word)) scoreB += 100;
+      });
+
+      if (name && a.toLowerCase().includes(name)) scoreA += 50;
+      if (name && b.toLowerCase().includes(name)) scoreB += 50;
+
+      if (phone && (a.includes(phone.slice(-4)) || a.includes(phone.slice(-6)))) scoreA += 50;
+      if (phone && (b.includes(phone.slice(-4)) || b.includes(phone.slice(-6)))) scoreB += 50;
+
+      if (/[!@#$%^&*]/.test(a)) scoreA += 20;
+      if (/[!@#$%^&*]/.test(b)) scoreB += 20;
+
+      if (/\d/.test(a)) scoreA += 10;
+      if (/\d/.test(b)) scoreB += 10;
+
+      return scoreB - scoreA;
+    });
     
-    return shuffled.slice(0, 25);
+    return prioritized.slice(0, 10);
   };
 
-  const handleGeneratePasswords = () => {
-    if (!ownerName && !ownerPhone && !additionalInfo && !platform && (!knownPasswords || knownPasswords.toLowerCase() === 'незнаю')) {
+  const handleGeneratePasswords = async () => {
+    if (!additionalInfo && !ownerName && !ownerPhone && !platform && (!knownPasswords || knownPasswords.toLowerCase() === 'незнаю')) {
       toast.error('ОШИБКА', {
         description: 'Заполните хотя бы одно поле с информацией'
       });
@@ -490,19 +641,19 @@ const Index = () => {
 
     const steps = [
       'Инициализация нейросети...',
-      'Анализ имени и телефона...',
-      'Поиск паттернов в известных паролях...',
-      'Сканирование платформы...',
-      'Применение leet-замен...',
-      'Генерация комбинаций с символами...',
-      'Анализ дополнительной информации...',
-      'Поиск в базе популярных паролей...',
-      'Создание реверсивных вариантов...',
-      'Финальная оптимизация...'
+      'Глубокий анализ дополнительной информации...',
+      'Поиск цифровых следов в интернете...',
+      'Сканирование социальных паттернов...',
+      'Анализ закрепленного пароля...',
+      'Применение алгоритмов машинного обучения...',
+      'Комбинирование данных из всех источников...',
+      'Применение leet-замен и вариаций...',
+      'Приоритизация по вероятности...',
+      'Финальная оптимизация и ранжирование...'
     ];
 
     let currentStep = 0;
-    const stepDuration = 350;
+    const stepDuration = 2000;
 
     const interval = setInterval(() => {
       currentStep++;
@@ -514,14 +665,14 @@ const Index = () => {
         setCurrentAnalysisStep('Завершено!');
         setAnalysisProgress(100);
         
-        setTimeout(() => {
-          const passwords = generatePasswordVariants();
+        setTimeout(async () => {
+          const passwords = await generatePasswordVariants();
           setGeneratedPasswords(passwords);
           setIsGenerating(false);
           toast.success('АНАЛИЗ ЗАВЕРШЁН', {
-            description: `Сгенерировано ${passwords.length} наиболее вероятных вариантов`
+            description: `Найдено ${passwords.length} высоковероятных паролей`
           });
-        }, 500);
+        }, 1000);
       }
     }, stepDuration);
 
@@ -536,7 +687,21 @@ const Index = () => {
   };
 
   const handleBuyCode = () => {
-    window.open('https://t.me/LyriumMine', '_blank');
+    setShowPurchaseModal(true);
+  };
+
+  const handlePinPassword = (password: string) => {
+    if (pinnedPassword === password) {
+      setPinnedPassword('');
+      toast.info('ПАРОЛЬ ОТКРЕПЁН', {
+        description: 'Используйте другой пароль как основу'
+      });
+    } else {
+      setPinnedPassword(password);
+      toast.success('ПАРОЛЬ ЗАКРЕПЛЁН', {
+        description: 'Новая генерация будет основана на нём'
+      });
+    }
   };
 
   if (!isActivated) {
@@ -551,8 +716,8 @@ const Index = () => {
                   <Icon name="Shield" className="text-primary w-8 h-8 matrix-glow" />
                 </div>
               </div>
-              <h1 className="text-2xl font-bold text-primary matrix-glow">
-                СИСТЕМА ЗАЩИТЫ
+              <h1 className="text-3xl font-bold text-primary matrix-glow tracking-wider">
+                DUWDU144
               </h1>
               <p className="text-muted-foreground text-sm">
                 Введите код активации для доступа
@@ -610,11 +775,11 @@ const Index = () => {
                 <Icon name="Brain" className="text-primary w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-primary matrix-glow">
-                  PASSWORD ANALYZER v4.0
+                <h1 className="text-2xl font-bold text-primary matrix-glow tracking-wider">
+                  DUWDU144
                 </h1>
-                <p className="text-xs text-muted-foreground font-mono">
-                  ИНТЕЛЛЕКТУАЛЬНАЯ СИСТЕМА ПОДБОРА ПАРОЛЕЙ
+                <p className="text-xs text-secondary font-mono">
+                  AI-POWERED PASSWORD ANALYZER v5.0
                 </p>
               </div>
             </div>
@@ -632,68 +797,98 @@ const Index = () => {
           </div>
 
           <div className="grid gap-4">
-            <div>
-              <label className="text-sm font-mono text-muted-foreground mb-2 block">
-                ИМЯ ВЛАДЕЛЬЦА
-              </label>
-              <Input
-                type="text"
-                placeholder="Иван Петров"
-                value={ownerName}
-                onChange={(e) => setOwnerName(e.target.value)}
-                className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-mono text-muted-foreground mb-2 block">
-                НОМЕР ТЕЛЕФОНА
-              </label>
-              <Input
-                type="text"
-                placeholder="+7 999 123 45 67"
-                value={ownerPhone}
-                onChange={(e) => setOwnerPhone(e.target.value)}
-                className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-mono text-muted-foreground mb-2 block">
-                ПЛАТФОРМА / СЕРВИС
-              </label>
-              <Input
-                type="text"
-                placeholder="ВКонтакте, Instagram, Telegram, Gmail..."
-                value={platform}
-                onChange={(e) => setPlatform(e.target.value)}
-                className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-mono text-muted-foreground mb-2 block">
-                ИЗВЕСТНЫЕ ПАРОЛИ
-              </label>
-              <Input
-                type="text"
-                placeholder='Если не знаете, напишите "Незнаю"'
-                value={knownPasswords}
-                onChange={(e) => setKnownPasswords(e.target.value)}
-                className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-mono text-muted-foreground mb-2 block">
-                ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ
+            <div className="bg-gradient-to-br from-primary/10 to-secondary/10 p-4 rounded-lg border-2 border-primary/40 shadow-[0_0_15px_rgba(0,255,65,0.2)]">
+              <label className="text-sm font-bold text-primary mb-3 flex items-center gap-2">
+                <Icon name="FileText" size={18} />
+                ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ (ПРИОРИТЕТ)
               </label>
               <Textarea
-                placeholder="Дата рождения, город, кличка питомца, любимая команда, важные даты, email..."
+                placeholder="ВСЯ ИНФОРМАЦИЯ О ЦЕЛИ: кличка питомца, любимая команда, хобби, важные даты, город, профессия, марка авто, прозвища, памятные события..."
                 value={additionalInfo}
                 onChange={(e) => setAdditionalInfo(e.target.value)}
-                className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary min-h-24 resize-none"
+                className="font-mono bg-background/80 border-primary/40 focus:border-primary text-primary min-h-32 resize-none placeholder:text-muted-foreground/70"
               />
+              <p className="text-xs text-secondary mt-2 font-mono">
+                ⚡ Чем больше деталей — тем точнее подбор
+              </p>
+            </div>
+
+            {pinnedPassword && (
+              <div className="bg-secondary/10 p-4 rounded-lg border border-secondary/50">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-bold text-secondary flex items-center gap-2">
+                    <Icon name="Pin" size={16} />
+                    ЗАКРЕПЛЁННЫЙ ПАРОЛЬ
+                  </label>
+                  <Button
+                    onClick={() => setPinnedPassword('')}
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground hover:text-destructive"
+                  >
+                    Открепить
+                  </Button>
+                </div>
+                <div className="font-mono text-secondary text-lg bg-background/50 rounded p-2">
+                  {pinnedPassword}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                  ИМЯ ВЛАДЕЛЬЦА
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Иван Петров"
+                  value={ownerName}
+                  onChange={(e) => setOwnerName(e.target.value)}
+                  className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                  ТЕЛЕФОН
+                </label>
+                <Input
+                  type="text"
+                  placeholder="+7 999 123 45 67"
+                  value={ownerPhone}
+                  onChange={(e) => setOwnerPhone(e.target.value)}
+                  className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                  ПЛАТФОРМА
+                </label>
+                <Input
+                  type="text"
+                  placeholder="VK, Instagram, Gmail..."
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                  className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                  ИЗВЕСТНЫЕ ПАРОЛИ
+                </label>
+                <Input
+                  type="text"
+                  placeholder='"Незнаю" если нет'
+                  value={knownPasswords}
+                  onChange={(e) => setKnownPasswords(e.target.value)}
+                  className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary text-sm"
+                />
+              </div>
             </div>
 
             {isGenerating && (
@@ -719,12 +914,12 @@ const Index = () => {
               {isGenerating ? (
                 <>
                   <Icon name="Loader2" className="mr-2 animate-spin" size={18} />
-                  ГЛУБОКИЙ АНАЛИЗ...
+                  АНАЛИЗ ДАННЫХ...
                 </>
               ) : (
                 <>
-                  <Icon name="Cpu" className="mr-2" size={18} />
-                  ЗАПУСТИТЬ АНАЛИЗ
+                  <Icon name="Sparkles" className="mr-2" size={18} />
+                  ЗАПУСТИТЬ AI АНАЛИЗ
                 </>
               )}
             </Button>
@@ -733,8 +928,9 @@ const Index = () => {
           {generatedPasswords.length > 0 && (
             <div className="space-y-3 pt-4 border-t border-border/50">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-mono text-primary matrix-glow">
-                  НАИБОЛЕЕ ВЕРОЯТНЫЕ ПАРОЛИ ({generatedPasswords.length})
+                <h3 className="text-sm font-bold text-primary matrix-glow flex items-center gap-2">
+                  <Icon name="Target" size={18} />
+                  ТОП-{generatedPasswords.length} ПАРОЛЕЙ
                 </h3>
                 <Button
                   onClick={handleGeneratePasswords}
@@ -751,24 +947,46 @@ const Index = () => {
                 {generatedPasswords.map((password, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between bg-muted/30 rounded p-3 border border-primary/20 hover:border-primary/50 transition-colors group"
+                    className={`flex items-center justify-between rounded p-3 border transition-all group ${
+                      pinnedPassword === password
+                        ? 'bg-secondary/20 border-secondary shadow-[0_0_10px_rgba(255,215,0,0.3)]'
+                        : 'bg-muted/30 border-primary/20 hover:border-primary/50'
+                    }`}
                   >
                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <span className="text-xs font-mono text-secondary w-6 flex-shrink-0">
+                      <span className={`text-xs font-bold w-8 flex-shrink-0 ${
+                        index === 0 ? 'text-yellow-400' : index === 1 ? 'text-gray-300' : index === 2 ? 'text-orange-400' : 'text-secondary'
+                      }`}>
                         #{index + 1}
                       </span>
-                      <span className="font-mono text-primary text-base truncate">
+                      <span className="font-mono text-primary text-base truncate font-semibold">
                         {password}
                       </span>
                     </div>
-                    <Button
-                      onClick={() => handleCopyPassword(password)}
-                      variant="ghost"
-                      size="sm"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity hover:bg-primary/10 flex-shrink-0"
-                    >
-                      <Icon name="Copy" className="text-primary" size={16} />
-                    </Button>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        onClick={() => handlePinPassword(password)}
+                        variant="ghost"
+                        size="sm"
+                        className="hover:bg-secondary/20 flex-shrink-0"
+                        title="Закрепить пароль"
+                      >
+                        <Icon 
+                          name={pinnedPassword === password ? "PinOff" : "Pin"} 
+                          className={pinnedPassword === password ? "text-secondary" : "text-primary"} 
+                          size={16} 
+                        />
+                      </Button>
+                      <Button
+                        onClick={() => handleCopyPassword(password)}
+                        variant="ghost"
+                        size="sm"
+                        className="hover:bg-primary/10 flex-shrink-0"
+                        title="Копировать"
+                      >
+                        <Icon name="Copy" className="text-primary" size={16} />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -787,6 +1005,80 @@ const Index = () => {
           </div>
         </div>
       </Card>
+
+      {showPurchaseModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50" onClick={() => setShowPurchaseModal(false)}>
+          <Card 
+            className="w-full max-w-lg p-6 bg-card/95 backdrop-blur border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.4)] relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              onClick={() => setShowPurchaseModal(false)}
+              variant="ghost"
+              size="icon"
+              className="absolute top-3 right-3 hover:bg-destructive/10"
+            >
+              <Icon name="X" className="text-muted-foreground" size={20} />
+            </Button>
+
+            <div className="space-y-6">
+              <div className="text-center space-y-2">
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center">
+                    <Icon name="ShoppingCart" className="text-secondary w-8 h-8" />
+                  </div>
+                </div>
+                <h2 className="text-2xl font-bold text-primary matrix-glow">
+                  ПОКУПКА КОДА АКТИВАЦИИ
+                </h2>
+                <p className="text-4xl font-bold text-secondary mt-2">199₽</p>
+              </div>
+
+              <div className="bg-primary/5 border border-primary/30 rounded-lg p-4 space-y-3">
+                <h3 className="text-sm font-bold text-primary flex items-center gap-2">
+                  <Icon name="Info" size={16} />
+                  ИНСТРУКЦИЯ ПО ПОКУПКЕ:
+                </h3>
+                
+                <ol className="text-sm text-muted-foreground space-y-2 font-mono list-decimal list-inside">
+                  <li>Перейдите в Telegram чат по кнопке ниже</li>
+                  <li>Напишите: "Хочу купить код DUWDU144"</li>
+                  <li>Отправьте 199₽ на указанные реквизиты</li>
+                  <li>После оплаты пришлите скриншот</li>
+                  <li>Получите код активации в течение 5 минут</li>
+                </ol>
+              </div>
+
+              <div className="bg-secondary/10 border border-secondary/50 rounded-lg p-3">
+                <div className="flex items-start gap-2 text-xs">
+                  <Icon name="CheckCircle2" className="text-secondary flex-shrink-0 mt-0.5" size={16} />
+                  <div>
+                    <p className="text-secondary font-bold mb-1">ЧТО ВЫ ПОЛУЧИТЕ:</p>
+                    <ul className="text-muted-foreground space-y-1 font-mono">
+                      <li>✓ Уникальный код активации</li>
+                      <li>✓ Неограниченный доступ к системе</li>
+                      <li>✓ AI-анализ и подбор паролей</li>
+                      <li>✓ Поддержка 24/7</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                onClick={() => window.open('https://t.me/LyriumMine', '_blank')}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/80 font-mono shadow-[0_0_20px_rgba(0,255,65,0.5)]"
+              >
+                <Icon name="Send" className="mr-2" size={18} />
+                ОТКРЫТЬ TELEGRAM ЧАТ
+              </Button>
+
+              <p className="text-center text-xs text-muted-foreground font-mono">
+                Поддержка: Telegram @LyriumMine
+              </p>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
