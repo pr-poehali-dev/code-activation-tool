@@ -72,6 +72,13 @@ const MatrixRain = () => {
 const Index = () => {
   const [isActivated, setIsActivated] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+
+  useEffect(() => {
+    const savedMinimized = localStorage.getItem('codeHacker_minimized');
+    if (savedMinimized === 'true') {
+      setIsMinimized(true);
+    }
+  }, []);
   const [activationCode, setActivationCode] = useState('');
   const [isRunning, setIsRunning] = useState(false);
   const [currentCode, setCurrentCode] = useState('000000');
@@ -83,6 +90,10 @@ const Index = () => {
     const savedActivation = localStorage.getItem('codeHacker_activated');
     if (savedActivation === 'true') {
       setIsActivated(true);
+    }
+    const savedMinimized = localStorage.getItem('codeHacker_minimized');
+    if (savedMinimized === 'true') {
+      setIsMinimized(true);
     }
   }, []);
 
@@ -217,7 +228,10 @@ const Index = () => {
             <Card className="absolute top-14 right-0 w-48 p-2 bg-card/95 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)]">
               <div className="space-y-1">
                 <Button
-                  onClick={() => setIsMinimized(false)}
+                  onClick={() => {
+                    setIsMinimized(false);
+                    localStorage.setItem('codeHacker_minimized', 'false');
+                  }}
                   variant="ghost"
                   className="w-full justify-start text-sm font-mono hover:bg-primary/10 hover:text-primary"
                 >
@@ -238,7 +252,9 @@ const Index = () => {
                 <Button
                   onClick={() => {
                     localStorage.removeItem('codeHacker_activated');
+                    localStorage.removeItem('codeHacker_minimized');
                     setIsActivated(false);
+                    setIsMinimized(false);
                     setShowMenu(false);
                   }}
                   variant="ghost"
@@ -276,7 +292,10 @@ const Index = () => {
               </div>
             </div>
             <Button
-              onClick={() => setIsMinimized(true)}
+              onClick={() => {
+                setIsMinimized(true);
+                localStorage.setItem('codeHacker_minimized', 'true');
+              }}
               variant="ghost"
               size="icon"
               className="hover:bg-primary/10"
