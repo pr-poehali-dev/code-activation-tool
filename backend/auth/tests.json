@@ -1,0 +1,31 @@
+{
+  "tests": [
+    {
+      "name": "Check valid unused code",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "check_code",
+        "code": "DHHDUE"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "valid": true,
+        "code": "DHHDUE"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Login with credentials",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "action": "login",
+        "username": "testuser",
+        "password": "wrongpass"
+      },
+      "expectedStatus": 401,
+      "bodyMatcher": "partial"
+    }
+  ]
+}

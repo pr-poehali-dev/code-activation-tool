@@ -6,17 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 
-const VALID_CODES = [
-  'DHHDUE',
-  'DYUSUWI',
-  'FFGSHS',
-  'DUUDJEH',
-  'CTYSWB',
-  'FHUEBRV',
-  'DUUWIW',
-  'OWOWODH',
-  'DUDYRV'
-];
+const API_URL = 'https://functions.poehali.dev/6bd52555-a066-4652-afba-34a87666fde3';
 
 const MatrixRain = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -71,8 +61,12 @@ const MatrixRain = () => {
 };
 
 const Index = () => {
-  const [isActivated, setIsActivated] = useState(false);
+  const [authState, setAuthState] = useState<'login' | 'code' | 'register' | 'authenticated'>('login');
   const [activationCode, setActivationCode] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [currentUser, setCurrentUser] = useState<{id: number, username: string} | null>(null);
 
   const [ownerName, setOwnerName] = useState('');
   const [ownerPhone, setOwnerPhone] = useState('');
@@ -86,17 +80,127 @@ const Index = () => {
   const [currentAnalysisStep, setCurrentAnalysisStep] = useState('');
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
-  const handleActivate = () => {
-    if (VALID_CODES.includes(activationCode.toUpperCase())) {
-      setIsActivated(true);
-      toast.success('СИСТЕМА АКТИВИРОВАНА', {
-        description: 'Доступ разрешен'
-      });
-    } else {
-      toast.error('ОШИБКА ДОСТУПА', {
-        description: 'Неверный код активации'
-      });
+  useEffect(() => {
+    const savedUser = localStorage.getItem('duwdu_user');
+    if (savedUser) {
+      setCurrentUser(JSON.parse(savedUser));
+      setAuthState('authenticated');
     }
+  }, []);
+
+  const handleLogin = async () => {
+    if (!username.trim() || !password.trim()) {
+      toast.error('ОШИБКА', { description: 'Заполните все поля' });
+      return;
+    }
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'login', username: username.trim(), password: password.trim() })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setCurrentUser(data.user);
+        localStorage.setItem('duwdu_user', JSON.stringify(data.user));
+        setAuthState('authenticated');
+        toast.success('ВХОД ВЫПОЛНЕН', { description: `Добро пожаловать, ${data.user.username}!` });
+      } else {
+        toast.error('ОШИБКА ВХОДА', { description: data.error || 'Неверный ник или пароль' });
+      }
+    } catch (error) {
+      toast.error('ОШИБКА СЕТИ', { description: 'Не удалось подключиться к серверу' });
+    }
+  };
+
+  const handleCheckCode = async () => {
+    const code = activationCode.toUpperCase().trim();
+    if (!code) {
+      toast.error('ОШИБКА', { description: 'Введите код активации' });
+      return;
+    }
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'check_code', code })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.valid) {
+        setAuthState('register');
+        toast.success('КОД ДЕЙСТВИТЕЛЕН', { description: 'Создайте аккаунт для продолжения' });
+      } else {
+        toast.error('ОШИБКА', { description: data.error || 'Неверный или использованный код' });
+      }
+    } catch (error) {
+      toast.error('ОШИБКА СЕТИ', { description: 'Не удалось проверить код' });
+    }
+  };
+
+  const handleRegister = async () => {
+    if (!username.trim() || !password.trim() || !passwordConfirm.trim()) {
+      toast.error('ОШИБКА', { description: 'Заполните все поля' });
+      return;
+    }
+
+    if (username.trim().length < 3) {
+      toast.error('ОШИБКА', { description: 'Ник должен быть минимум 3 символа' });
+      return;
+    }
+
+    if (password.trim().length < 6) {
+      toast.error('ОШИБКА', { description: 'Пароль должен быть минимум 6 символов' });
+      return;
+    }
+
+    if (password !== passwordConfirm) {
+      toast.error('ОШИБКА', { description: 'Пароли не совпадают' });
+      return;
+    }
+
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'register',
+          code: activationCode.toUpperCase().trim(),
+          username: username.trim(),
+          password: password.trim()
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setCurrentUser(data.user);
+        localStorage.setItem('duwdu_user', JSON.stringify(data.user));
+        setAuthState('authenticated');
+        toast.success('АККАУНТ СОЗДАН', { description: `Добро пожаловать, ${data.user.username}!` });
+      } else {
+        toast.error('ОШИБКА РЕГИСТРАЦИИ', { description: data.error || 'Не удалось создать аккаунт' });
+      }
+    } catch (error) {
+      toast.error('ОШИБКА СЕТИ', { description: 'Не удалось подключиться к серверу' });
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('duwdu_user');
+    setCurrentUser(null);
+    setAuthState('login');
+    setUsername('');
+    setPassword('');
+    setPasswordConfirm('');
+    setActivationCode('');
+    setGeneratedPasswords([]);
+    toast.info('ВЫХОД', { description: 'Вы вышли из системы' });
   };
 
   const generatePasswordVariants = async () => {
@@ -621,10 +725,46 @@ const Index = () => {
       if (/\d/.test(a)) scoreA += 10;
       if (/\d/.test(b)) scoreB += 10;
 
+      const hasUpperCase = /[A-Z]/.test(a) ? 5 : 0;
+      const hasUpperCaseB = /[A-Z]/.test(b) ? 5 : 0;
+      scoreA += hasUpperCase;
+      scoreB += hasUpperCaseB;
+
+      if (a.length >= 8 && a.length <= 16) scoreA += 15;
+      if (b.length >= 8 && b.length <= 16) scoreB += 15;
+
+      const uniqueCharsA = new Set(a.split('')).size;
+      const uniqueCharsB = new Set(b.split('')).size;
+      scoreA += uniqueCharsA;
+      scoreB += uniqueCharsB;
+
       return scoreB - scoreA;
     });
     
-    return prioritized.slice(0, 10);
+    const selectedPasswords: string[] = [];
+    const seenPatterns = new Set<string>();
+    
+    for (const pwd of prioritized) {
+      if (selectedPasswords.length >= 10) break;
+      
+      const pattern = pwd.replace(/\d/g, 'N').replace(/[!@#$%^&*_.\-]/g, 'S').toLowerCase();
+      
+      if (!seenPatterns.has(pattern) || selectedPasswords.length < 5) {
+        selectedPasswords.push(pwd);
+        seenPatterns.add(pattern);
+      }
+    }
+    
+    if (selectedPasswords.length < 10) {
+      for (const pwd of prioritized) {
+        if (selectedPasswords.length >= 10) break;
+        if (!selectedPasswords.includes(pwd)) {
+          selectedPasswords.push(pwd);
+        }
+      }
+    }
+    
+    return selectedPasswords.slice(0, 10);
   };
 
   const handleGeneratePasswords = async () => {
@@ -704,7 +844,272 @@ const Index = () => {
     }
   };
 
-  if (!isActivated) {
+  if (authState === 'code') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+        <MatrixRain />
+        <Card className="w-full max-w-md p-8 bg-card/90 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)] relative z-10">
+          <div className="space-y-6">
+            <div className="text-center space-y-3">
+              <div className="flex justify-center mb-4">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-secondary/30 to-primary/20 flex items-center justify-center shadow-[0_0_25px_rgba(255,183,3,0.4)]">
+                  <Icon name="Key" className="text-secondary w-10 h-10" />
+                </div>
+              </div>
+              <h1 className="text-3xl font-bold text-primary matrix-glow tracking-wider">
+                АКТИВАЦИЯ КОДА
+              </h1>
+              <p className="text-muted-foreground text-sm font-mono">
+                Введите код для создания аккаунта
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                  КОД АКТИВАЦИИ
+                </label>
+                <Input
+                  type="text"
+                  placeholder="ВВЕДИТЕ КОД"
+                  value={activationCode}
+                  onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCheckCode()}
+                  className="text-center font-mono text-lg tracking-widest bg-input/50 border-secondary/30 focus:border-secondary text-secondary placeholder:text-muted-foreground"
+                  maxLength={15}
+                />
+              </div>
+
+              <Button
+                onClick={handleCheckCode}
+                className="w-full bg-gradient-to-r from-secondary to-secondary/80 text-secondary-foreground hover:from-secondary/90 hover:to-secondary/70 font-mono shadow-[0_0_20px_rgba(255,183,3,0.5)] h-12"
+              >
+                <Icon name="Check" className="mr-2" size={20} />
+                ПРОВЕРИТЬ КОД
+              </Button>
+
+              <div className="pt-4 border-t border-border/50 space-y-3">
+                <Button
+                  onClick={() => setAuthState('login')}
+                  variant="ghost"
+                  className="w-full font-mono text-muted-foreground hover:text-primary"
+                >
+                  <Icon name="ArrowLeft" className="mr-2" size={18} />
+                  Вернуться к входу
+                </Button>
+                
+                <p className="text-xs text-center text-muted-foreground font-mono">
+                  Нет кода? Купите за 199₽
+                </p>
+                <Button
+                  onClick={handleBuyCode}
+                  variant="outline"
+                  className="w-full border-secondary text-secondary hover:bg-secondary/10 font-mono"
+                >
+                  <Icon name="ShoppingCart" className="mr-2" size={18} />
+                  КУПИТЬ КОД
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
+        
+        {showPurchaseModal && (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto" onClick={() => setShowPurchaseModal(false)}>
+            <Card 
+              className="w-full max-w-lg p-6 bg-card/95 backdrop-blur border-2 border-secondary/50 shadow-[0_0_40px_rgba(255,183,3,0.5)] relative my-8 animate-in fade-in zoom-in duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                onClick={() => setShowPurchaseModal(false)}
+                variant="ghost"
+                size="icon"
+                className="absolute top-3 right-3 hover:bg-destructive/10 z-10"
+              >
+                <Icon name="X" className="text-muted-foreground" size={20} />
+              </Button>
+
+              <div className="space-y-6">
+                <div className="text-center space-y-3">
+                  <div className="flex justify-center mb-4">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-secondary/30 to-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(255,183,3,0.4)]">
+                      <Icon name="ShoppingCart" className="text-secondary w-10 h-10" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl font-bold text-primary matrix-glow">
+                    ПОКУПКА КОДА
+                  </h2>
+                  <p className="text-5xl font-bold text-secondary mt-3 matrix-glow">199₽</p>
+                  <p className="text-sm text-muted-foreground font-mono">Единоразовая оплата • Без подписок</p>
+                </div>
+
+                <div className="bg-primary/5 border-2 border-primary/40 rounded-lg p-5 space-y-4">
+                  <h3 className="text-base font-bold text-primary flex items-center gap-2">
+                    <Icon name="Clipboard" size={18} />
+                    ИНСТРУКЦИЯ ПО ПОКУПКЕ:
+                  </h3>
+                  
+                  <ol className="text-sm text-foreground space-y-3 font-mono list-none">
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">1</span>
+                      <span>Нажмите кнопку ниже для перехода в Telegram</span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">2</span>
+                      <span>Напишите: <span className="text-secondary font-bold">"Хочу купить код DUWDU144"</span></span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">3</span>
+                      <span>Переведите 199₽ на указанные реквизиты</span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">4</span>
+                      <span>Отправьте скриншот оплаты в чат</span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">5</span>
+                      <span>Получите код активации <span className="text-secondary font-bold">в течение 5 минут</span></span>
+                    </li>
+                  </ol>
+                </div>
+
+                <div className="bg-gradient-to-br from-secondary/10 to-primary/5 border-2 border-secondary/40 rounded-lg p-4">
+                  <div className="flex items-start gap-3 text-sm">
+                    <Icon name="CheckCircle2" className="text-secondary flex-shrink-0 mt-0.5" size={20} />
+                    <div className="space-y-2">
+                      <p className="text-secondary font-bold text-base">ЧТО ВЫ ПОЛУЧИТЕ:</p>
+                      <ul className="text-muted-foreground space-y-2 font-mono">
+                        <li className="flex items-center gap-2">
+                          <span className="text-secondary">✓</span>
+                          <span>Уникальный код активации</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-secondary">✓</span>
+                          <span>Неограниченный доступ к AI-системе</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-secondary">✓</span>
+                          <span>Подбор паролей по 10+ алгоритмам</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-secondary">✓</span>
+                          <span>Поддержка 24/7 в Telegram</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => window.open('https://t.me/LyriumMine', '_blank')}
+                  className="w-full bg-gradient-to-r from-secondary to-secondary/80 text-secondary-foreground hover:from-secondary/90 hover:to-secondary/70 font-mono shadow-[0_0_25px_rgba(255,183,3,0.6)] h-14 text-lg"
+                >
+                  <Icon name="Send" className="mr-2" size={22} />
+                  ОТКРЫТЬ TELEGRAM ЧАТ
+                </Button>
+
+                <div className="text-center space-y-2">
+                  <p className="text-xs text-muted-foreground font-mono">
+                    Поддержка: <span className="text-secondary">@LyriumMine</span>
+                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
+                    <span className="text-xs text-secondary font-mono">Отвечаем в течение 5 минут</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (authState === 'register') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+        <MatrixRain />
+        <Card className="w-full max-w-md p-8 bg-card/90 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)] relative z-10">
+          <div className="space-y-6">
+            <div className="text-center space-y-3">
+              <div className="flex justify-center mb-4">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/30 to-secondary/20 flex items-center justify-center shadow-[0_0_25px_rgba(0,255,65,0.4)]">
+                  <Icon name="UserPlus" className="text-primary w-10 h-10 matrix-glow" />
+                </div>
+              </div>
+              <h1 className="text-3xl font-bold text-primary matrix-glow tracking-wider">
+                СОЗДАНИЕ АККАУНТА
+              </h1>
+              <p className="text-muted-foreground text-sm font-mono">
+                Код <span className="text-secondary font-bold">{activationCode}</span> действителен
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                  НИК (минимум 3 символа)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Придумайте ник"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                  ПАРОЛЬ (минимум 6 символов)
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Придумайте пароль"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                  ПОВТОР ПАРОЛЯ
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Повторите пароль"
+                  value={passwordConfirm}
+                  onChange={(e) => setPasswordConfirm(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleRegister()}
+                  className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div className="bg-secondary/5 border border-secondary/30 rounded-lg p-3">
+                <div className="flex items-start gap-2">
+                  <Icon name="Info" className="text-secondary flex-shrink-0 mt-0.5" size={16} />
+                  <p className="text-xs text-muted-foreground font-mono">
+                    Запомните эти данные — они понадобятся для входа в систему
+                  </p>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleRegister}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/80 font-mono shadow-[0_0_20px_rgba(0,255,65,0.5)] h-12"
+              >
+                <Icon name="Check" className="mr-2" size={20} />
+                СОЗДАТЬ АККАУНТ
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
+  if (authState === 'login') {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
         <MatrixRain />
@@ -731,46 +1136,51 @@ const Index = () => {
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-mono text-muted-foreground mb-2 block">
-                  КОД АКТИВАЦИИ
+                  НИК
                 </label>
                 <Input
                   type="text"
-                  placeholder="ВВЕДИТЕ КОД"
-                  value={activationCode}
-                  onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === 'Enter' && handleActivate()}
-                  className="text-center font-mono text-lg tracking-widest bg-input/50 border-primary/30 focus:border-primary text-primary placeholder:text-muted-foreground"
-                  maxLength={10}
+                  placeholder="Введите ваш ник"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                  ПАРОЛЬ
+                </label>
+                <Input
+                  type="password"
+                  placeholder="Введите пароль"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                  className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary placeholder:text-muted-foreground"
                 />
               </div>
 
               <Button
-                onClick={handleActivate}
+                onClick={handleLogin}
                 className="w-full bg-primary text-primary-foreground hover:bg-primary/80 font-mono shadow-[0_0_20px_rgba(0,255,65,0.5)] h-12"
               >
-                <Icon name="Lock" className="mr-2" size={20} />
-                АКТИВИРОВАТЬ СИСТЕМУ
+                <Icon name="LogIn" className="mr-2" size={20} />
+                ВОЙТИ В СИСТЕМУ
               </Button>
 
               <div className="pt-4 border-t border-border/50 space-y-3">
-                <div className="bg-secondary/5 border border-secondary/30 rounded-lg p-3">
-                  <div className="flex items-start gap-2 mb-2">
-                    <Icon name="Sparkles" className="text-secondary flex-shrink-0 mt-0.5" size={16} />
-                    <div>
-                      <p className="text-xs font-bold text-secondary mb-1">ЧТО ВНУТРИ:</p>
-                      <ul className="text-xs text-muted-foreground space-y-1 font-mono">
-                        <li>✓ AI-анализ социальных сетей</li>
-                        <li>✓ Подбор по личным данным</li>
-                        <li>✓ 10+ алгоритмов генерации</li>
-                        <li>✓ Приоритизация паролей</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-                
                 <p className="text-xs text-center text-muted-foreground font-mono">
-                  Нет кода активации?
+                  Нет аккаунта? Купите код активации
                 </p>
+                <Button
+                  onClick={() => setAuthState('code')}
+                  variant="outline"
+                  className="w-full border-secondary text-secondary hover:bg-secondary/10 font-mono h-11"
+                >
+                  <Icon name="Key" className="mr-2" size={18} />
+                  У МЕНЯ ЕСТЬ КОД
+                </Button>
                 <Button
                   onClick={handleBuyCode}
                   className="w-full bg-gradient-to-r from-secondary to-secondary/80 text-secondary-foreground hover:from-secondary/90 hover:to-secondary/70 font-mono shadow-[0_0_15px_rgba(255,183,3,0.4)] h-12 text-base"
@@ -910,18 +1320,16 @@ const Index = () => {
                   DUWDU144
                 </h1>
                 <p className="text-xs text-secondary font-mono">
-                  AI-POWERED PASSWORD ANALYZER v5.0
+                  Пользователь: <span className="text-primary">{currentUser?.username || 'Неизвестный'}</span>
                 </p>
               </div>
             </div>
             <Button
-              onClick={() => {
-                setIsActivated(false);
-                setActivationCode('');
-              }}
+              onClick={handleLogout}
               variant="ghost"
               size="icon"
               className="hover:bg-destructive/10"
+              title="Выйти из системы"
             >
               <Icon name="LogOut" className="text-destructive" size={20} />
             </Button>
