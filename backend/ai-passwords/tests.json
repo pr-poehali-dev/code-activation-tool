@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "Test AI password generation endpoint",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "ownerName": "Александр",
+        "ownerPhone": "79991234567",
+        "platform": "вконтакте",
+        "knownPasswords": "sasha123",
+        "additionalInfo": "любит футбол, болеет за Зенит, день рождения 15 мая 1995",
+        "pinnedPassword": ""
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "passwords": "array"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -8,6 +8,44 @@ import PurchaseModal from '@/components/modals/PurchaseModal';
 import { generatePasswordVariants } from '@/utils/passwordGenerator';
 
 const API_URL = 'https://functions.poehali.dev/6bd52555-a066-4652-afba-34a87666fde3';
+const AI_PASSWORDS_URL = 'https://functions.poehali.dev/276abb70-948b-4ec2-9cfb-f536c7ec9d10';
+
+async function generateAIPasswords(
+  ownerName: string,
+  ownerPhone: string,
+  platform: string,
+  knownPasswords: string,
+  additionalInfo: string,
+  pinnedPassword: string
+): Promise<string[]> {
+  try {
+    const response = await fetch(AI_PASSWORDS_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ownerName,
+        ownerPhone,
+        platform,
+        knownPasswords,
+        additionalInfo,
+        pinnedPassword
+      })
+    });
+
+    if (!response.ok) {
+      console.error('AI passwords API error:', await response.text());
+      return [];
+    }
+
+    const data = await response.json();
+    return data.passwords || [];
+  } catch (error) {
+    console.error('Failed to generate AI passwords:', error);
+    return [];
+  }
+}
 
 const Index = () => {
   const [authState, setAuthState] = useState<'login' | 'code' | 'register' | 'authenticated'>('login');
@@ -181,7 +219,7 @@ const Index = () => {
     ];
 
     let currentStep = 0;
-    const stepDuration = 2000;
+    const stepDuration = 1700;
 
     const interval = setInterval(() => {
       currentStep++;
@@ -202,10 +240,22 @@ const Index = () => {
             additionalInfo,
             pinnedPassword
           );
-          setGeneratedPasswords(passwords);
+          
+          const aiPasswords = await generateAIPasswords(
+            ownerName,
+            ownerPhone,
+            platform,
+            knownPasswords,
+            additionalInfo,
+            pinnedPassword
+          );
+          
+          const allPasswords = [...passwords, ...aiPasswords];
+          
+          setGeneratedPasswords(allPasswords);
           setIsGenerating(false);
           toast.success('АНАЛИЗ ЗАВЕРШЁН', {
-            description: `Найдено ${passwords.length} высоковероятных паролей`
+            description: `Найдено ${allPasswords.length} высоковероятных паролей`
           });
         }, 1000);
       }
