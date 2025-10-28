@@ -710,55 +710,186 @@ const Index = () => {
         <MatrixRain />
         <Card className="w-full max-w-md p-8 bg-card/90 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)] relative z-10">
           <div className="space-y-6">
-            <div className="text-center space-y-2">
+            <div className="text-center space-y-3">
               <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Icon name="Shield" className="text-primary w-8 h-8 matrix-glow" />
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/30 to-secondary/20 flex items-center justify-center shadow-[0_0_25px_rgba(0,255,65,0.4)]">
+                  <Icon name="Shield" className="text-primary w-10 h-10 matrix-glow" />
                 </div>
               </div>
-              <h1 className="text-3xl font-bold text-primary matrix-glow tracking-wider">
+              <h1 className="text-4xl font-bold text-primary matrix-glow tracking-wider">
                 DUWDU144
               </h1>
-              <p className="text-muted-foreground text-sm">
-                Введите код активации для доступа
+              <p className="text-muted-foreground text-sm font-mono">
+                AI-система подбора паролей нового поколения
               </p>
+              <div className="flex items-center justify-center gap-2 pt-2">
+                <div className="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
+                <span className="text-xs text-secondary font-mono">ОНЛАЙН</span>
+              </div>
             </div>
 
             <div className="space-y-4">
-              <Input
-                type="text"
-                placeholder="КОД АКТИВАЦИИ"
-                value={activationCode}
-                onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
-                onKeyDown={(e) => e.key === 'Enter' && handleActivate()}
-                className="text-center font-mono text-lg tracking-widest bg-input/50 border-primary/30 focus:border-primary text-primary placeholder:text-muted-foreground"
-                maxLength={10}
-              />
+              <div>
+                <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                  КОД АКТИВАЦИИ
+                </label>
+                <Input
+                  type="text"
+                  placeholder="ВВЕДИТЕ КОД"
+                  value={activationCode}
+                  onChange={(e) => setActivationCode(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === 'Enter' && handleActivate()}
+                  className="text-center font-mono text-lg tracking-widest bg-input/50 border-primary/30 focus:border-primary text-primary placeholder:text-muted-foreground"
+                  maxLength={10}
+                />
+              </div>
 
               <Button
                 onClick={handleActivate}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/80 font-mono shadow-[0_0_20px_rgba(0,255,65,0.5)]"
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/80 font-mono shadow-[0_0_20px_rgba(0,255,65,0.5)] h-12"
               >
-                <Icon name="Lock" className="mr-2" size={18} />
-                АКТИВИРОВАТЬ
+                <Icon name="Lock" className="mr-2" size={20} />
+                АКТИВИРОВАТЬ СИСТЕМУ
               </Button>
 
-              <div className="pt-4 border-t border-border/50">
-                <p className="text-xs text-center text-muted-foreground mb-3">
-                  Нет кода доступа?
+              <div className="pt-4 border-t border-border/50 space-y-3">
+                <div className="bg-secondary/5 border border-secondary/30 rounded-lg p-3">
+                  <div className="flex items-start gap-2 mb-2">
+                    <Icon name="Sparkles" className="text-secondary flex-shrink-0 mt-0.5" size={16} />
+                    <div>
+                      <p className="text-xs font-bold text-secondary mb-1">ЧТО ВНУТРИ:</p>
+                      <ul className="text-xs text-muted-foreground space-y-1 font-mono">
+                        <li>✓ AI-анализ социальных сетей</li>
+                        <li>✓ Подбор по личным данным</li>
+                        <li>✓ 10+ алгоритмов генерации</li>
+                        <li>✓ Приоритизация паролей</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                
+                <p className="text-xs text-center text-muted-foreground font-mono">
+                  Нет кода активации?
                 </p>
                 <Button
                   onClick={handleBuyCode}
-                  variant="outline"
-                  className="w-full border-secondary text-secondary hover:bg-secondary/10 font-mono"
+                  className="w-full bg-gradient-to-r from-secondary to-secondary/80 text-secondary-foreground hover:from-secondary/90 hover:to-secondary/70 font-mono shadow-[0_0_15px_rgba(255,183,3,0.4)] h-12 text-base"
                 >
-                  <Icon name="ShoppingCart" className="mr-2" size={18} />
+                  <Icon name="ShoppingCart" className="mr-2" size={20} />
                   КУПИТЬ КОД — 199₽
                 </Button>
               </div>
             </div>
           </div>
         </Card>
+        
+        {showPurchaseModal && (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto" onClick={() => setShowPurchaseModal(false)}>
+            <Card 
+              className="w-full max-w-lg p-6 bg-card/95 backdrop-blur border-2 border-secondary/50 shadow-[0_0_40px_rgba(255,183,3,0.5)] relative my-8 animate-in fade-in zoom-in duration-300"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Button
+                onClick={() => setShowPurchaseModal(false)}
+                variant="ghost"
+                size="icon"
+                className="absolute top-3 right-3 hover:bg-destructive/10 z-10"
+              >
+                <Icon name="X" className="text-muted-foreground" size={20} />
+              </Button>
+
+              <div className="space-y-6">
+                <div className="text-center space-y-3">
+                  <div className="flex justify-center mb-4">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-secondary/30 to-primary/20 flex items-center justify-center shadow-[0_0_30px_rgba(255,183,3,0.4)]">
+                      <Icon name="ShoppingCart" className="text-secondary w-10 h-10" />
+                    </div>
+                  </div>
+                  <h2 className="text-3xl font-bold text-primary matrix-glow">
+                    ПОКУПКА КОДА
+                  </h2>
+                  <p className="text-5xl font-bold text-secondary mt-3 matrix-glow">199₽</p>
+                  <p className="text-sm text-muted-foreground font-mono">Единоразовая оплата • Без подписок</p>
+                </div>
+
+                <div className="bg-primary/5 border-2 border-primary/40 rounded-lg p-5 space-y-4">
+                  <h3 className="text-base font-bold text-primary flex items-center gap-2">
+                    <Icon name="Clipboard" size={18} />
+                    ИНСТРУКЦИЯ ПО ПОКУПКЕ:
+                  </h3>
+                  
+                  <ol className="text-sm text-foreground space-y-3 font-mono list-none">
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">1</span>
+                      <span>Нажмите кнопку ниже для перехода в Telegram</span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">2</span>
+                      <span>Напишите: <span className="text-secondary font-bold">"Хочу купить код DUWDU144"</span></span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">3</span>
+                      <span>Переведите 199₽ на указанные реквизиты</span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">4</span>
+                      <span>Отправьте скриншот оплаты в чат</span>
+                    </li>
+                    <li className="flex gap-3">
+                      <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-xs">5</span>
+                      <span>Получите код активации <span className="text-secondary font-bold">в течение 5 минут</span></span>
+                    </li>
+                  </ol>
+                </div>
+
+                <div className="bg-gradient-to-br from-secondary/10 to-primary/5 border-2 border-secondary/40 rounded-lg p-4">
+                  <div className="flex items-start gap-3 text-sm">
+                    <Icon name="CheckCircle2" className="text-secondary flex-shrink-0 mt-0.5" size={20} />
+                    <div className="space-y-2">
+                      <p className="text-secondary font-bold text-base">ЧТО ВЫ ПОЛУЧИТЕ:</p>
+                      <ul className="text-muted-foreground space-y-2 font-mono">
+                        <li className="flex items-center gap-2">
+                          <span className="text-secondary">✓</span>
+                          <span>Уникальный код активации</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-secondary">✓</span>
+                          <span>Неограниченный доступ к AI-системе</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-secondary">✓</span>
+                          <span>Подбор паролей по 10+ алгоритмам</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <span className="text-secondary">✓</span>
+                          <span>Поддержка 24/7 в Telegram</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <Button
+                  onClick={() => window.open('https://t.me/LyriumMine', '_blank')}
+                  className="w-full bg-gradient-to-r from-secondary to-secondary/80 text-secondary-foreground hover:from-secondary/90 hover:to-secondary/70 font-mono shadow-[0_0_25px_rgba(255,183,3,0.6)] h-14 text-lg"
+                >
+                  <Icon name="Send" className="mr-2" size={22} />
+                  ОТКРЫТЬ TELEGRAM ЧАТ
+                </Button>
+
+                <div className="text-center space-y-2">
+                  <p className="text-xs text-muted-foreground font-mono">
+                    Поддержка: <span className="text-secondary">@LyriumMine</span>
+                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-secondary animate-pulse"></div>
+                    <span className="text-xs text-secondary font-mono">Отвечаем в течение 5 минут</span>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
     );
   }
@@ -1006,79 +1137,7 @@ const Index = () => {
         </div>
       </Card>
 
-      {showPurchaseModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto" onClick={() => setShowPurchaseModal(false)}>
-          <Card 
-            className="w-full max-w-lg p-6 bg-card/95 backdrop-blur border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.4)] relative my-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
-              onClick={() => setShowPurchaseModal(false)}
-              variant="ghost"
-              size="icon"
-              className="absolute top-3 right-3 hover:bg-destructive/10"
-            >
-              <Icon name="X" className="text-muted-foreground" size={20} />
-            </Button>
 
-            <div className="space-y-6">
-              <div className="text-center space-y-2">
-                <div className="flex justify-center mb-4">
-                  <div className="w-16 h-16 rounded-full bg-secondary/20 flex items-center justify-center">
-                    <Icon name="ShoppingCart" className="text-secondary w-8 h-8" />
-                  </div>
-                </div>
-                <h2 className="text-2xl font-bold text-primary matrix-glow">
-                  ПОКУПКА КОДА АКТИВАЦИИ
-                </h2>
-                <p className="text-4xl font-bold text-secondary mt-2">199₽</p>
-              </div>
-
-              <div className="bg-primary/5 border border-primary/30 rounded-lg p-4 space-y-3">
-                <h3 className="text-sm font-bold text-primary flex items-center gap-2">
-                  <Icon name="Info" size={16} />
-                  ИНСТРУКЦИЯ ПО ПОКУПКЕ:
-                </h3>
-                
-                <ol className="text-sm text-muted-foreground space-y-2 font-mono list-decimal list-inside">
-                  <li>Перейдите в Telegram чат по кнопке ниже</li>
-                  <li>Напишите: "Хочу купить код DUWDU144"</li>
-                  <li>Отправьте 199₽ на указанные реквизиты</li>
-                  <li>После оплаты пришлите скриншот</li>
-                  <li>Получите код активации в течение 5 минут</li>
-                </ol>
-              </div>
-
-              <div className="bg-secondary/10 border border-secondary/50 rounded-lg p-3">
-                <div className="flex items-start gap-2 text-xs">
-                  <Icon name="CheckCircle2" className="text-secondary flex-shrink-0 mt-0.5" size={16} />
-                  <div>
-                    <p className="text-secondary font-bold mb-1">ЧТО ВЫ ПОЛУЧИТЕ:</p>
-                    <ul className="text-muted-foreground space-y-1 font-mono">
-                      <li>✓ Уникальный код активации</li>
-                      <li>✓ Неограниченный доступ к системе</li>
-                      <li>✓ AI-анализ и подбор паролей</li>
-                      <li>✓ Поддержка 24/7</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                onClick={() => window.open('https://t.me/LyriumMine', '_blank')}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/80 font-mono shadow-[0_0_20px_rgba(0,255,65,0.5)]"
-              >
-                <Icon name="Send" className="mr-2" size={18} />
-                ОТКРЫТЬ TELEGRAM ЧАТ
-              </Button>
-
-              <p className="text-center text-xs text-muted-foreground font-mono">
-                Поддержка: Telegram @LyriumMine
-              </p>
-            </div>
-          </Card>
-        </div>
-      )}
     </div>
   );
 };
