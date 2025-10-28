@@ -53,10 +53,10 @@ const PasswordAnalyzer = ({
   onLogout
 }: PasswordAnalyzerProps) => {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
       <MatrixRain />
 
-      <Card className="w-full max-w-3xl p-8 bg-card/90 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)] relative z-10 max-h-[90vh] overflow-y-auto">
+      <Card className="w-full max-w-3xl p-8 bg-card/90 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)] relative z-10 max-h-[85vh] overflow-y-auto">
         <div className="space-y-6">
           <div className="flex items-center justify-between border-b border-border/50 pb-4">
             <div className="flex items-center gap-3">

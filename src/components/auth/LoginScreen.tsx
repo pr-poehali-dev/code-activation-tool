@@ -24,7 +24,7 @@ const LoginScreen = ({
   onBuyCode
 }: LoginScreenProps) => {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
       <MatrixRain />
       <Card className="w-full max-w-md p-8 bg-card/90 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)] relative z-10">
         <div className="space-y-6">
