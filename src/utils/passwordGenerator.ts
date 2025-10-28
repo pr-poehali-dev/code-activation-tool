@@ -18,9 +18,9 @@ export const generatePasswordVariants = async (
   }
 
   const platformPatterns: Record<string, string[]> = {
-    'вконтакте': ['vk', 'vkontakte', 'вк', 'vkcom', 'vk.com'],
+    'вконтакте': ['vk', 'vkontakte', 'вк', 'vkcom', 'vk.com', 'вконтакте'],
     'вк': ['vk', 'vkontakte', 'вк', 'vkcom'],
-    'instagram': ['insta', 'ig', 'inst', 'instagram', 'gram'],
+    'instagram': ['insta', 'ig', 'inst', 'instagram', 'gram', 'instagr'],
     'telegram': ['tg', 'tlg', 'telegram', 'tele', 'telega'],
     'whatsapp': ['wa', 'whatsapp', 'whats', 'wapp'],
     'gmail': ['google', 'gmail', 'mail', 'gm', 'goog'],
@@ -38,28 +38,100 @@ export const generatePasswordVariants = async (
     'apple': ['apple', 'icloud', 'appl']
   };
 
-  const commonSymbols = ['!', '@', '#', '$', '*', '_', '.', '-', '&'];
-  const years = ['2024', '2025', '2023', '2022', '2021', '2020', '2019', '2018', '00', '01', '02', '03', '99', '98', '97', '96', '95', '10', '11'];
-  const numbers = ['1', '12', '123', '1234', '12345', '123456', '1111', '2222', '777', '666', '69', '420', '007', '111', '222', '333'];
+  const commonSymbols = ['!', '@', '#', '$', '*', '_', '.', '-', '&', '?', '+', '='];
+  const years = ['2025', '2024', '2023', '2022', '2021', '2020', '2019', '2018', '2017', '2016', '2015', '00', '01', '02', '03', '04', '05', '99', '98', '97', '96', '95', '10', '11', '12', '13'];
+  const numbers = ['1', '12', '123', '1234', '12345', '123456', '1111', '2222', '777', '666', '69', '420', '007', '111', '222', '333', '444', '555', '888', '999'];
+  const commonWords = ['love', 'pass', 'password', 'qwerty', 'admin', 'user', 'welcome', 'hello', 'secret', 'master', 'boss', 'king', 'queen'];
 
   const leetReplacements: Record<string, string> = {
-    'a': '4', 'e': '3', 'i': '1', 'o': '0', 's': '5', 't': '7', 'l': '1', 'g': '9'
+    'a': '4', 'e': '3', 'i': '1', 'o': '0', 's': '5', 't': '7', 'l': '1', 'g': '9', 'b': '8'
+  };
+
+  const advancedLeetReplacements: Record<string, string[]> = {
+    'a': ['4', '@', 'А'],
+    'e': ['3', 'Е'],
+    'i': ['1', '!', '|'],
+    'o': ['0', 'О'],
+    's': ['5', '$', 'С'],
+    't': ['7', '+'],
+    'l': ['1', '|'],
+    'g': ['9', '6'],
+    'b': ['8', 'Б']
   };
 
   const toLeet = (text: string): string => {
     return text.split('').map(char => leetReplacements[char.toLowerCase()] || char).join('');
   };
 
+  const toAdvancedLeet = (text: string): string[] => {
+    const results: string[] = [text];
+    for (const [key, replacements] of Object.entries(advancedLeetReplacements)) {
+      if (text.toLowerCase().includes(key)) {
+        replacements.forEach(replacement => {
+          results.push(text.replace(new RegExp(key, 'gi'), replacement));
+        });
+      }
+    }
+    return results;
+  };
+
   const capitalize = (text: string): string => {
     return text.charAt(0).toUpperCase() + text.slice(1);
+  };
+
+  const capitalizeRandom = (text: string): string[] => {
+    const results: string[] = [];
+    for (let i = 0; i < text.length; i++) {
+      const variant = text.split('').map((char, idx) => {
+        if (idx === i || idx === 0) return char.toUpperCase();
+        return char;
+      }).join('');
+      results.push(variant);
+    }
+    return results;
   };
 
   const reverseString = (text: string): string => {
     return text.split('').reverse().join('');
   };
 
-  const infoWords = info.match(/\b\w+\b/g) || [];
-  const priorityWords = infoWords.filter(w => w.length > 3);
+  const alternateCase = (text: string): string => {
+    return text.split('').map((char, idx) => idx % 2 === 0 ? char.toUpperCase() : char.toLowerCase()).join('');
+  };
+
+  const mirrorString = (text: string): string => {
+    return text + reverseString(text);
+  };
+
+  const doubleString = (text: string): string => {
+    return text + text;
+  };
+
+  const insertSymbols = (text: string, symbols: string[]): string[] => {
+    const results: string[] = [];
+    symbols.forEach(sym => {
+      for (let i = 1; i < text.length; i++) {
+        results.push(text.slice(0, i) + sym + text.slice(i));
+      }
+    });
+    return results;
+  };
+
+  const extractDates = (text: string): string[] => {
+    const dateRegex = /\b(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{2,4})\b/g;
+    const matches = [...text.matchAll(dateRegex)];
+    return matches.map(m => m[0].replace(/[.\-\/]/g, ''));
+  };
+
+  const infoWords = info.match(/\b[а-яёa-z]{3,}\b/gi) || [];
+  const priorityWords = [...new Set(infoWords.filter(w => w.length > 2))];
+
+  const infoDates = extractDates(info);
+  infoDates.forEach(date => {
+    passwords.push(date);
+    passwords.push(date.slice(0, 4));
+    passwords.push(date.slice(-4));
+  });
 
   priorityWords.forEach((word) => {
     passwords.push(word);
@@ -67,20 +139,34 @@ export const generatePasswordVariants = async (
     passwords.push(word.toUpperCase());
     passwords.push(toLeet(word));
     passwords.push(reverseString(word));
+    passwords.push(alternateCase(word));
+    passwords.push(mirrorString(word));
+    passwords.push(doubleString(word));
+
+    toAdvancedLeet(word).forEach(leet => passwords.push(leet));
+    capitalizeRandom(word).forEach(cap => passwords.push(cap));
+
+    insertSymbols(word, ['!', '@', '#']).forEach(variant => passwords.push(variant));
 
     numbers.forEach(num => {
       passwords.push(word + num);
       passwords.push(num + word);
       passwords.push(capitalize(word) + num);
+      passwords.push(toLeet(word) + num);
+      passwords.push(num + toLeet(word));
+      passwords.push(word + '_' + num);
+      passwords.push(word + '-' + num);
     });
 
     commonSymbols.forEach(sym => {
       passwords.push(word + sym);
       passwords.push(word + sym + sym);
+      passwords.push(sym + word);
       passwords.push(capitalize(word) + sym);
-      numbers.forEach(num => {
+      numbers.slice(0, 10).forEach(num => {
         passwords.push(word + num + sym);
         passwords.push(word + sym + num);
+        passwords.push(sym + word + num);
       });
     });
 
@@ -89,51 +175,95 @@ export const generatePasswordVariants = async (
       passwords.push(year + word);
       passwords.push(capitalize(word) + year);
       passwords.push(word + '_' + year);
-      commonSymbols.forEach(sym => {
+      passwords.push(word + '.' + year);
+      passwords.push(toLeet(word) + year);
+      commonSymbols.slice(0, 5).forEach(sym => {
         passwords.push(word + year + sym);
+        passwords.push(word + sym + year);
       });
     });
 
     if (phone) {
-      passwords.push(word + phone.slice(-4));
-      passwords.push(word + phone.slice(-6));
-      passwords.push(phone.slice(-4) + word);
-      passwords.push(word + '_' + phone.slice(-4));
+      const phoneVariants = [
+        phone.slice(-4),
+        phone.slice(-6),
+        phone.slice(-8),
+        phone.slice(0, 3),
+        phone.slice(1, 4)
+      ];
+      phoneVariants.forEach(ph => {
+        if (ph) {
+          passwords.push(word + ph);
+          passwords.push(ph + word);
+          passwords.push(word + '_' + ph);
+          passwords.push(word + '-' + ph);
+          passwords.push(capitalize(word) + ph);
+        }
+      });
     }
 
     if (name) {
+      const nameParts = name.split(/[\s_.-]+/);
       passwords.push(word + name);
       passwords.push(name + word);
       passwords.push(word + '_' + name);
       passwords.push(capitalize(word) + capitalize(name));
       passwords.push(word + '.' + name);
       passwords.push(name + '.' + word);
+      passwords.push(word + '@' + name);
+      passwords.push(toLeet(word) + toLeet(name));
+
+      nameParts.forEach(part => {
+        if (part.length > 1) {
+          passwords.push(word + part);
+          passwords.push(part + word);
+          passwords.push(word + part.charAt(0));
+          passwords.push(part.charAt(0) + word);
+        }
+      });
     }
 
     if (platformLower) {
-      const platformKeys = Object.keys(platformPatterns);
-      platformKeys.forEach((key) => {
+      Object.keys(platformPatterns).forEach((key) => {
         if (platformLower.includes(key)) {
           platformPatterns[key].forEach((p) => {
             passwords.push(word + p);
             passwords.push(p + word);
             passwords.push(word + '_' + p);
             passwords.push(capitalize(word) + capitalize(p));
+            passwords.push(word + '@' + p);
+            passwords.push(toLeet(word) + p);
+            numbers.slice(0, 8).forEach(num => {
+              passwords.push(word + p + num);
+              passwords.push(p + word + num);
+            });
           });
         }
       });
     }
 
     priorityWords.forEach((word2) => {
-      if (word !== word2 && word2.length > 3) {
+      if (word !== word2 && word2.length > 2) {
         passwords.push(word + word2);
+        passwords.push(word2 + word);
         passwords.push(word + '_' + word2);
         passwords.push(capitalize(word) + capitalize(word2));
-        numbers.forEach(num => {
+        passwords.push(toLeet(word) + toLeet(word2));
+        numbers.slice(0, 6).forEach(num => {
           passwords.push(word + word2 + num);
           passwords.push(word + num + word2);
         });
+        commonSymbols.slice(0, 3).forEach(sym => {
+          passwords.push(word + sym + word2);
+          passwords.push(word + word2 + sym);
+        });
       }
+    });
+
+    commonWords.forEach(common => {
+      passwords.push(word + common);
+      passwords.push(common + word);
+      passwords.push(capitalize(word) + capitalize(common));
     });
 
     if (pinnedPassword && !pinnedPassword.includes(word)) {
@@ -141,7 +271,8 @@ export const generatePasswordVariants = async (
       passwords.push(word + pinnedPassword);
       passwords.push(pinnedPassword + '_' + word);
       passwords.push(word + '_' + pinnedPassword);
-      numbers.forEach(num => {
+      passwords.push(pinnedPassword + '.' + word);
+      numbers.slice(0, 6).forEach(num => {
         passwords.push(pinnedPassword + word + num);
         passwords.push(word + pinnedPassword + num);
       });
@@ -157,22 +288,30 @@ export const generatePasswordVariants = async (
         passwords.push(pwd.toUpperCase());
         passwords.push(toLeet(pwd));
         passwords.push(reverseString(pwd));
+        passwords.push(alternateCase(pwd));
+        passwords.push(mirrorString(pwd));
+
+        toAdvancedLeet(pwd).forEach(leet => passwords.push(leet));
         
         commonSymbols.forEach(sym => {
           passwords.push(pwd + sym);
           passwords.push(sym + pwd);
           passwords.push(pwd + sym + sym);
+          passwords.push(pwd + sym + sym + sym);
         });
         
         numbers.forEach(num => {
           passwords.push(pwd + num);
           passwords.push(num + pwd);
           passwords.push(pwd + '_' + num);
+          passwords.push(toLeet(pwd) + num);
         });
         
         years.forEach(year => {
           passwords.push(pwd + year);
           passwords.push(year + pwd);
+          passwords.push(pwd + '.' + year);
+          passwords.push(pwd + '-' + year);
         });
         
         if (name) {
@@ -182,11 +321,11 @@ export const generatePasswordVariants = async (
           passwords.push(pwd + '_' + name);
           passwords.push(name + '.' + pwd);
           passwords.push(capitalize(name) + capitalize(pwd));
+          passwords.push(toLeet(name) + toLeet(pwd));
         }
         
         if (platformLower) {
-          const platformKeys = Object.keys(platformPatterns);
-          platformKeys.forEach((key) => {
+          Object.keys(platformPatterns).forEach((key) => {
             if (platformLower.includes(key)) {
               platformPatterns[key].forEach((p) => {
                 passwords.push(pwd + p);
@@ -194,6 +333,7 @@ export const generatePasswordVariants = async (
                 passwords.push(pwd + '_' + p);
                 passwords.push(p + '_' + pwd);
                 passwords.push(pwd + '@' + p);
+                passwords.push(p + '@' + pwd);
               });
             }
           });
@@ -203,14 +343,22 @@ export const generatePasswordVariants = async (
           passwords.push(pwd + phone.slice(-4));
           passwords.push(pwd + phone.slice(-6));
           passwords.push(phone.slice(-4) + pwd);
+          passwords.push(pwd + '_' + phone.slice(-4));
         }
+
+        priorityWords.forEach(word => {
+          if (word.length > 2) {
+            passwords.push(pwd + word);
+            passwords.push(word + pwd);
+            passwords.push(pwd + '_' + word);
+          }
+        });
       }
     });
   }
 
   if (platformLower) {
-    const platformKeys = Object.keys(platformPatterns);
-    platformKeys.forEach((key) => {
+    Object.keys(platformPatterns).forEach((key) => {
       if (platformLower.includes(key)) {
         platformPatterns[key].forEach((p) => {
           passwords.push(p);
@@ -221,14 +369,17 @@ export const generatePasswordVariants = async (
           numbers.forEach(num => {
             passwords.push(p + num);
             passwords.push(num + p);
+            passwords.push(p + '_' + num);
           });
 
           commonSymbols.forEach(sym => {
             passwords.push(p + sym);
             passwords.push(p + '123' + sym);
+            passwords.push(p + sym + '123');
           });
           
           if (name) {
+            const nameParts = name.split(/[\s_.-]+/);
             passwords.push(name + p);
             passwords.push(p + name);
             passwords.push(name + '_' + p);
@@ -236,26 +387,28 @@ export const generatePasswordVariants = async (
             passwords.push(name + '.' + p);
             passwords.push(name + '@' + p);
             passwords.push(p + '.' + name);
+            passwords.push(toLeet(name) + p);
             
-            const nameParts = name.split(/[\s_-]+/);
             if (nameParts.length > 1) {
-              passwords.push(nameParts[0] + p);
-              passwords.push(p + nameParts[0]);
-              passwords.push(nameParts[0].charAt(0) + p);
+              nameParts.forEach(part => {
+                passwords.push(part + p);
+                passwords.push(p + part);
+                passwords.push(part.charAt(0) + p);
+                passwords.push(p + part.charAt(0));
+              });
             }
           }
           
           if (phone) {
             passwords.push(p + phone.slice(-4));
             passwords.push(p + phone.slice(-6));
-            passwords.push(p + '_' + phone.slice(-4));
             passwords.push(phone.slice(-4) + p);
+            passwords.push(p + '_' + phone.slice(-4));
           }
 
           years.forEach(year => {
             passwords.push(p + year);
             passwords.push(year + p);
-            passwords.push(p + '_' + year);
           });
         });
       }
@@ -263,192 +416,130 @@ export const generatePasswordVariants = async (
   }
 
   if (name) {
-    passwords.push(name);
-    passwords.push(capitalize(name));
-    passwords.push(name.toUpperCase());
-    passwords.push(toLeet(name));
-    passwords.push(reverseString(name));
+    const nameParts = name.split(/[\s_.-]+/);
     
-    numbers.forEach(num => {
-      passwords.push(name + num);
-      passwords.push(num + name);
-      passwords.push(name + '_' + num);
-      passwords.push(capitalize(name) + num);
+    nameParts.forEach((part) => {
+      if (part.length > 1) {
+        passwords.push(part);
+        passwords.push(capitalize(part));
+        passwords.push(part.toUpperCase());
+        passwords.push(toLeet(part));
+        passwords.push(reverseString(part));
+        
+        numbers.forEach(num => {
+          passwords.push(part + num);
+          passwords.push(num + part);
+          passwords.push(capitalize(part) + num);
+        });
+        
+        years.forEach(year => {
+          passwords.push(part + year);
+          passwords.push(year + part);
+        });
+        
+        commonSymbols.slice(0, 6).forEach(sym => {
+          passwords.push(part + sym);
+          passwords.push(part + '123' + sym);
+        });
+      }
     });
 
-    commonSymbols.forEach(sym => {
-      passwords.push(name + sym);
-      passwords.push(name + sym + sym);
-      passwords.push(sym + name);
-    });
-
-    years.forEach(year => {
-      passwords.push(name + year);
-      passwords.push(year + name);
-      passwords.push(name + '_' + year);
-      passwords.push(capitalize(name) + year);
-    });
-    
-    const nameParts = name.split(/[\s_-]+/);
     if (nameParts.length > 1) {
-      passwords.push(nameParts[0] + nameParts[1]);
-      passwords.push(nameParts[1] + nameParts[0]);
-      passwords.push(nameParts[0].charAt(0) + nameParts[1]);
-      passwords.push(nameParts[0] + nameParts[1].charAt(0));
-      passwords.push(capitalize(nameParts[0]) + capitalize(nameParts[1]));
+      passwords.push(nameParts[0] + nameParts[nameParts.length - 1]);
+      passwords.push(nameParts[0].charAt(0) + nameParts[nameParts.length - 1]);
+      passwords.push(capitalize(nameParts[0]) + capitalize(nameParts[nameParts.length - 1]));
       
-      nameParts.forEach((part) => {
-        if (part.length > 2) {
-          passwords.push(part);
-          passwords.push(capitalize(part));
-          passwords.push(toLeet(part));
-          numbers.forEach(num => {
-            passwords.push(part + num);
-            passwords.push(num + part);
-          });
-        }
-      });
-
       numbers.forEach(num => {
-        passwords.push(nameParts[0] + num + nameParts[1]);
-        passwords.push(nameParts[0] + nameParts[1] + num);
-      });
-    }
-
-    const firstLetters = name.split(/[\s_-]+/).map(p => p.charAt(0)).join('');
-    if (firstLetters.length > 1) {
-      passwords.push(firstLetters);
-      passwords.push(firstLetters.toUpperCase());
-      numbers.forEach(num => {
-        passwords.push(firstLetters + num);
-        passwords.push(firstLetters.toUpperCase() + num);
+        passwords.push(nameParts[0] + nameParts[nameParts.length - 1] + num);
+        passwords.push(nameParts[0].charAt(0) + nameParts[nameParts.length - 1] + num);
       });
     }
   }
 
   if (phone) {
-    passwords.push(phone.slice(-6));
-    passwords.push(phone.slice(-8));
-    passwords.push(phone.slice(-4));
-    passwords.push(phone.slice(-4) + phone.slice(-4));
-    passwords.push(phone.slice(0, 4) + phone.slice(-4));
-    
-    if (name) {
-      passwords.push(name + phone.slice(-4));
-      passwords.push(name + phone.slice(-2));
-      passwords.push(phone.slice(-4) + name);
-      passwords.push(name + '_' + phone.slice(-4));
-      passwords.push(capitalize(name) + phone.slice(-4));
-      passwords.push(name + phone.slice(-6));
-    }
+    const phoneVariants = [
+      phone.slice(-4),
+      phone.slice(-6),
+      phone.slice(-8),
+      phone.slice(0, 3),
+      phone.slice(1, 4),
+      phone.slice(0, 4),
+      phone
+    ];
 
-    commonSymbols.forEach(sym => {
-      passwords.push(phone.slice(-4) + sym);
-      passwords.push(phone.slice(-6) + sym);
-    });
-  }
-
-  const words = ['qwerty', 'password', 'admin', 'login', 'user', '123456', 'iloveyou', 'welcome', 'monkey', 'dragon'];
-  words.forEach(word => {
-    passwords.push(word);
-    passwords.push(capitalize(word));
-    passwords.push(word + '123');
-    passwords.push(word + '!');
-    if (name) {
-      passwords.push(name + word);
-      passwords.push(word + name);
-    }
-  });
-
-  if (pinnedPassword) {
-    commonSymbols.forEach(sym => {
-      passwords.push(pinnedPassword + sym);
-      passwords.push(sym + pinnedPassword);
-    });
-
-    numbers.forEach(num => {
-      passwords.push(pinnedPassword + num);
-      passwords.push(num + pinnedPassword);
-    });
-
-    years.forEach(year => {
-      passwords.push(pinnedPassword + year);
-      passwords.push(year + pinnedPassword);
-    });
-
-    passwords.push(capitalize(pinnedPassword));
-    passwords.push(pinnedPassword.toUpperCase());
-    passwords.push(toLeet(pinnedPassword));
-    passwords.push(reverseString(pinnedPassword));
-  }
-
-  const uniquePasswords = [...new Set(passwords)]
-    .filter(p => p && p.length >= 4 && p.length <= 30);
-  
-  const prioritized = uniquePasswords.sort((a, b) => {
-    let scoreA = 0;
-    let scoreB = 0;
-
-    if (pinnedPassword) {
-      if (a.includes(pinnedPassword)) scoreA += 1000;
-      if (b.includes(pinnedPassword)) scoreB += 1000;
-    }
-
-    priorityWords.forEach(word => {
-      if (a.toLowerCase().includes(word)) scoreA += 100;
-      if (b.toLowerCase().includes(word)) scoreB += 100;
-    });
-
-    if (name && a.toLowerCase().includes(name)) scoreA += 50;
-    if (name && b.toLowerCase().includes(name)) scoreB += 50;
-
-    if (phone && (a.includes(phone.slice(-4)) || a.includes(phone.slice(-6)))) scoreA += 50;
-    if (phone && (b.includes(phone.slice(-4)) || b.includes(phone.slice(-6)))) scoreB += 50;
-
-    if (/[!@#$%^&*]/.test(a)) scoreA += 20;
-    if (/[!@#$%^&*]/.test(b)) scoreB += 20;
-
-    if (/\d/.test(a)) scoreA += 10;
-    if (/\d/.test(b)) scoreB += 10;
-
-    const hasUpperCase = /[A-Z]/.test(a) ? 5 : 0;
-    const hasUpperCaseB = /[A-Z]/.test(b) ? 5 : 0;
-    scoreA += hasUpperCase;
-    scoreB += hasUpperCaseB;
-
-    if (a.length >= 8 && a.length <= 16) scoreA += 15;
-    if (b.length >= 8 && b.length <= 16) scoreB += 15;
-
-    const uniqueCharsA = new Set(a.split('')).size;
-    const uniqueCharsB = new Set(b.split('')).size;
-    scoreA += uniqueCharsA;
-    scoreB += uniqueCharsB;
-
-    return scoreB - scoreA;
-  });
-  
-  const selectedPasswords: string[] = [];
-  const seenPatterns = new Set<string>();
-  
-  for (const pwd of prioritized) {
-    if (selectedPasswords.length >= 10) break;
-    
-    const pattern = pwd.replace(/\d/g, 'N').replace(/[!@#$%^&*_.\-]/g, 'S').toLowerCase();
-    
-    if (!seenPatterns.has(pattern) || selectedPasswords.length < 5) {
-      selectedPasswords.push(pwd);
-      seenPatterns.add(pattern);
-    }
-  }
-  
-  if (selectedPasswords.length < 10) {
-    for (const pwd of prioritized) {
-      if (selectedPasswords.length >= 10) break;
-      if (!selectedPasswords.includes(pwd)) {
-        selectedPasswords.push(pwd);
+    phoneVariants.forEach(ph => {
+      if (ph && ph.length >= 3) {
+        passwords.push(ph);
+        commonSymbols.slice(0, 4).forEach(sym => {
+          passwords.push(ph + sym);
+          passwords.push(sym + ph);
+        });
+        years.slice(0, 10).forEach(year => {
+          passwords.push(ph + year);
+          passwords.push(year + ph);
+        });
       }
-    }
+    });
   }
-  
-  return selectedPasswords.slice(0, 10);
+
+  years.forEach(year => {
+    commonSymbols.slice(0, 4).forEach(sym => {
+      passwords.push(year + sym);
+      passwords.push(sym + year);
+    });
+    numbers.slice(0, 8).forEach(num => {
+      passwords.push(year + num);
+      passwords.push(num + year);
+    });
+  });
+
+  const uniquePasswords = [...new Set(passwords)];
+  const filteredPasswords = uniquePasswords.filter(p => 
+    p && 
+    p.length >= 4 && 
+    p.length <= 32 &&
+    !/^\d+$/.test(p) &&
+    !/^[!@#$%^&*()_+=\-,.]+$/.test(p)
+  );
+
+  const scorePassword = (pwd: string): number => {
+    let score = 0;
+    
+    if (pinnedPassword && pwd.includes(pinnedPassword)) score += 1000;
+    
+    if (priorityWords.some(w => pwd.toLowerCase().includes(w.toLowerCase()))) score += 500;
+    
+    if (known && known !== 'незнаю' && pwd.toLowerCase().includes(known.toLowerCase())) score += 800;
+    
+    if (name && pwd.toLowerCase().includes(name.toLowerCase())) score += 300;
+    
+    if (phone && phone.slice(-4) && pwd.includes(phone.slice(-4))) score += 200;
+    
+    if (platformLower) {
+      Object.keys(platformPatterns).forEach(key => {
+        if (platformLower.includes(key) && platformPatterns[key].some(p => pwd.toLowerCase().includes(p))) {
+          score += 150;
+        }
+      });
+    }
+    
+    if (/\d/.test(pwd)) score += 50;
+    if (/[!@#$%^&*()_+=\-,.]/.test(pwd)) score += 30;
+    if (/[A-Z]/.test(pwd)) score += 20;
+    
+    if (pwd.length >= 8 && pwd.length <= 16) score += 100;
+    if (pwd.length >= 6 && pwd.length < 8) score += 50;
+    
+    const hasLeet = Object.values(leetReplacements).some(r => pwd.includes(r));
+    if (hasLeet) score += 40;
+    
+    return score;
+  };
+
+  const scoredPasswords = filteredPasswords
+    .map(pwd => ({ pwd, score: scorePassword(pwd) }))
+    .sort((a, b) => b.score - a.score)
+    .map(item => item.pwd);
+
+  return scoredPasswords.slice(0, 150);
 };

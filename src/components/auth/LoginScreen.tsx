@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -23,6 +24,8 @@ const LoginScreen = ({
   onSwitchToCode,
   onBuyCode
 }: LoginScreenProps) => {
+  const [acceptedPolicy, setAcceptedPolicy] = useState(false);
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
       <MatrixRain />
@@ -74,13 +77,28 @@ const LoginScreen = ({
               />
             </div>
 
-            <Button
-              onClick={onLogin}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/80 font-mono shadow-[0_0_20px_rgba(0,255,65,0.5)] h-12"
-            >
-              <Icon name="LogIn" className="mr-2" size={20} />
-              ВОЙТИ В СИСТЕМУ
-            </Button>
+            <div className="space-y-3">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={acceptedPolicy}
+                  onChange={(e) => setAcceptedPolicy(e.target.checked)}
+                  className="mt-1 w-4 h-4 rounded border-primary/50 bg-input/50 text-primary focus:ring-primary focus:ring-2 cursor-pointer"
+                />
+                <span className="text-xs text-muted-foreground font-mono leading-relaxed group-hover:text-foreground transition-colors">
+                  Я принимаю <span className="text-secondary">условия использования</span> и понимаю, что сайт не несёт ответственности за мои действия. Использование сервиса осуществляется на свой риск.
+                </span>
+              </label>
+              
+              <Button
+                onClick={onLogin}
+                disabled={!acceptedPolicy}
+                className="w-full bg-primary text-primary-foreground hover:bg-primary/80 font-mono shadow-[0_0_20px_rgba(0,255,65,0.5)] h-12 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Icon name="LogIn" className="mr-2" size={20} />
+                ВОЙТИ В СИСТЕМУ
+              </Button>
+            </div>
 
             <div className="pt-4 border-t border-border/50 space-y-3">
               <p className="text-xs text-center text-muted-foreground font-mono">
