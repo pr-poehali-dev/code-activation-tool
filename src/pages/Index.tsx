@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import LandingPage from '@/components/landing/LandingPage';
 import LoginScreen from '@/components/auth/LoginScreen';
 import CodeActivationScreen from '@/components/auth/CodeActivationScreen';
 import RegisterScreen from '@/components/auth/RegisterScreen';
@@ -16,7 +17,8 @@ async function generateAIPasswords(
   platform: string,
   knownPasswords: string,
   additionalInfo: string,
-  pinnedPassword: string
+  pinnedPassword: string,
+  difficulty: 'easy' | 'normal' | 'hard'
 ): Promise<string[]> {
   try {
     const response = await fetch(AI_PASSWORDS_URL, {
@@ -30,7 +32,8 @@ async function generateAIPasswords(
         platform,
         knownPasswords,
         additionalInfo,
-        pinnedPassword
+        pinnedPassword,
+        difficulty
       })
     });
 
@@ -48,7 +51,7 @@ async function generateAIPasswords(
 }
 
 const Index = () => {
-  const [authState, setAuthState] = useState<'login' | 'code' | 'register' | 'authenticated'>('login');
+  const [authState, setAuthState] = useState<'landing' | 'login' | 'code' | 'register' | 'authenticated'>('landing');
   const [activationCode, setActivationCode] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -60,6 +63,7 @@ const Index = () => {
   const [platform, setPlatform] = useState('');
   const [knownPasswords, setKnownPasswords] = useState('');
   const [additionalInfo, setAdditionalInfo] = useState('');
+  const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
   const [generatedPasswords, setGeneratedPasswords] = useState<string[]>([]);
   const [pinnedPassword, setPinnedPassword] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -203,19 +207,19 @@ const Index = () => {
     setGeneratedPasswords([]);
 
     const steps = [
-      'Инициализация квантовой нейросети GPT-7...',
-      'Подключение к базам данных утечек (>15 млрд записей)...',
-      'Глубокий анализ дополнительной информации...',
-      'OSINT: поиск цифровых следов в Dark Web...',
-      'Сканирование социальных паттернов и психотипа...',
-      'Анализ закрепленного пароля через Rainbow Tables...',
-      'Применение алгоритмов машинного обучения GPT-4...',
-      'Комбинирование данных из всех источников...',
-      'Применение продвинутых leet-замен и мутаций...',
-      'Генерация вариантов через Markov Chains...',
-      'Кросс-анализ с базой Common Passwords (10M+)...',
-      'Приоритизация по вероятности через Bayesian Network...',
-      'Финальная оптимизация и ранжирование через AI...'
+      '🧠 Инициализация Claude 3.5 Sonnet...',
+      '📊 Построение психологического профиля...',
+      '🔍 Анализ личных данных и привычек...',
+      '💡 Выявление эмоциональных привязок...',
+      '🎯 Определение паттернов поведения...',
+      '🧬 Изучение культурного контекста...',
+      '🔢 Анализ числовых комбинаций...',
+      '⚡ Применение когнитивных упрощений...',
+      '🎲 Генерация базовых вариантов...',
+      '🔄 Создание трансформаций и мутаций...',
+      '📈 Оценка вероятности каждого пароля...',
+      '🎨 Применение креативных комбинаций...',
+      '✨ Финальное ранжирование через AI...'
     ];
 
     let currentStep = 0;
@@ -247,15 +251,18 @@ const Index = () => {
             platform,
             knownPasswords,
             additionalInfo,
-            pinnedPassword
+            pinnedPassword,
+            difficulty
           );
           
           const allPasswords = [...passwords, ...aiPasswords];
           
-          setGeneratedPasswords(allPasswords);
+          const uniquePasswords = Array.from(new Set(allPasswords)).slice(0, 25);
+          
+          setGeneratedPasswords(uniquePasswords);
           setIsGenerating(false);
           toast.success('АНАЛИЗ ЗАВЕРШЁН', {
-            description: `Найдено ${allPasswords.length} высоковероятных паролей`
+            description: `Найдено ${uniquePasswords.length} высоковероятных паролей`
           });
         }, 1000);
       }
@@ -288,6 +295,10 @@ const Index = () => {
       });
     }
   };
+
+  if (authState === 'landing') {
+    return <LandingPage onGetStarted={() => setAuthState('login')} />;
+  }
 
   if (authState === 'code') {
     return (
@@ -345,6 +356,7 @@ const Index = () => {
       knownPasswords={knownPasswords}
       additionalInfo={additionalInfo}
       pinnedPassword={pinnedPassword}
+      difficulty={difficulty}
       generatedPasswords={generatedPasswords}
       isGenerating={isGenerating}
       analysisProgress={analysisProgress}
@@ -355,6 +367,7 @@ const Index = () => {
       setKnownPasswords={setKnownPasswords}
       setAdditionalInfo={setAdditionalInfo}
       setPinnedPassword={setPinnedPassword}
+      setDifficulty={setDifficulty}
       onGenerate={handleGeneratePasswords}
       onCopyPassword={handleCopyPassword}
       onPinPassword={handlePinPassword}

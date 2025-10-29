@@ -541,5 +541,5 @@ export const generatePasswordVariants = async (
     .sort((a, b) => b.score - a.score)
     .map(item => item.pwd);
 
-  return scoredPasswords.slice(0, 8);
+  return scoredPasswords.slice(0, 3);
 };

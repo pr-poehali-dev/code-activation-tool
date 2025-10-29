@@ -1,7 +1,7 @@
 {
   "tests": [
     {
-      "name": "Test AI password generation endpoint",
+      "name": "Test Claude AI password generation - normal difficulty",
       "method": "POST",
       "path": "/",
       "body": {
@@ -10,7 +10,27 @@
         "platform": "вконтакте",
         "knownPasswords": "sasha123",
         "additionalInfo": "любит футбол, болеет за Зенит, день рождения 15 мая 1995",
-        "pinnedPassword": ""
+        "pinnedPassword": "",
+        "difficulty": "normal"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "passwords": "array"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test Claude AI password generation - easy difficulty",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "ownerName": "Мария",
+        "ownerPhone": "79167778899",
+        "platform": "instagram",
+        "knownPasswords": "",
+        "additionalInfo": "работает учителем, любит кошек",
+        "pinnedPassword": "",
+        "difficulty": "easy"
       },
       "expectedStatus": 200,
       "expectedBody": {

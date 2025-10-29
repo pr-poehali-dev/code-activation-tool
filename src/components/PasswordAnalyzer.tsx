@@ -13,6 +13,7 @@ interface PasswordAnalyzerProps {
   knownPasswords: string;
   additionalInfo: string;
   pinnedPassword: string;
+  difficulty: 'easy' | 'normal' | 'hard';
   generatedPasswords: string[];
   isGenerating: boolean;
   analysisProgress: number;
@@ -23,6 +24,7 @@ interface PasswordAnalyzerProps {
   setKnownPasswords: (value: string) => void;
   setAdditionalInfo: (value: string) => void;
   setPinnedPassword: (value: string) => void;
+  setDifficulty: (value: 'easy' | 'normal' | 'hard') => void;
   onGenerate: () => void;
   onCopyPassword: (password: string) => void;
   onPinPassword: (password: string) => void;
@@ -37,6 +39,7 @@ const PasswordAnalyzer = ({
   knownPasswords,
   additionalInfo,
   pinnedPassword,
+  difficulty,
   generatedPasswords,
   isGenerating,
   analysisProgress,
@@ -47,6 +50,7 @@ const PasswordAnalyzer = ({
   setKnownPasswords,
   setAdditionalInfo,
   setPinnedPassword,
+  setDifficulty,
   onGenerate,
   onCopyPassword,
   onPinPassword,
@@ -56,19 +60,19 @@ const PasswordAnalyzer = ({
     <div className="min-h-screen flex items-center justify-center p-4 relative">
       <MatrixRain />
 
-      <Card className="w-full max-w-3xl p-8 bg-card/90 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)] relative z-10 max-h-[85vh] overflow-y-auto">
+      <Card className="w-full max-w-3xl p-8 bg-card/90 backdrop-blur-sm border-2 border-primary/50 shadow-[0_0_30px_rgba(0,255,65,0.3)] relative z-10 max-h-[85vh] overflow-y-auto fade-in">
         <div className="space-y-6">
           <div className="flex items-center justify-between border-b border-border/50 pb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded bg-primary/20 flex items-center justify-center">
+              <div className="w-10 h-10 rounded bg-primary/20 flex items-center justify-center pulse-glow">
                 <Icon name="Brain" className="text-primary w-5 h-5" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-primary matrix-glow tracking-wider">
+                <h1 className="text-3xl font-bold text-primary matrix-glow tracking-wider">
                   DUWDU144
                 </h1>
                 <p className="text-xs text-secondary font-mono">
-                  Пользователь: <span className="text-primary">{currentUser?.username || 'Неизвестный'}</span>
+                  👤 <span className="text-primary">{currentUser?.username || 'Неизвестный'}</span> • Powered by Claude 3.5 Sonnet
                 </p>
               </div>
             </div>
@@ -176,6 +180,58 @@ const PasswordAnalyzer = ({
                   className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary text-sm"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                УРОВЕНЬ СЛОЖНОСТИ ПАРОЛЯ
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  type="button"
+                  onClick={() => setDifficulty('easy')}
+                  variant={difficulty === 'easy' ? 'default' : 'outline'}
+                  className={`font-mono text-sm transition-all ${
+                    difficulty === 'easy'
+                      ? 'bg-green-500/20 border-green-500 text-green-400 shadow-[0_0_15px_rgba(34,197,94,0.4)]'
+                      : 'border-primary/30 text-muted-foreground hover:border-green-500/50 hover:text-green-400'
+                  }`}
+                >
+                  <Icon name="Smile" size={16} className="mr-2" />
+                  ЛЁГКИЙ
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setDifficulty('normal')}
+                  variant={difficulty === 'normal' ? 'default' : 'outline'}
+                  className={`font-mono text-sm transition-all ${
+                    difficulty === 'normal'
+                      ? 'bg-primary/20 border-primary text-primary shadow-[0_0_15px_rgba(0,255,65,0.4)]'
+                      : 'border-primary/30 text-muted-foreground hover:border-primary/50 hover:text-primary'
+                  }`}
+                >
+                  <Icon name="Meh" size={16} className="mr-2" />
+                  ОБЫЧНЫЙ
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => setDifficulty('hard')}
+                  variant={difficulty === 'hard' ? 'default' : 'outline'}
+                  className={`font-mono text-sm transition-all ${
+                    difficulty === 'hard'
+                      ? 'bg-red-500/20 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.4)]'
+                      : 'border-primary/30 text-muted-foreground hover:border-red-500/50 hover:text-red-400'
+                  }`}
+                >
+                  <Icon name="Frown" size={16} className="mr-2" />
+                  ТЯЖЁЛЫЙ
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 font-mono">
+                {difficulty === 'easy' && '🟢 Простые пароли (4-8 символов): qwerty, 12345, имя+год'}
+                {difficulty === 'normal' && '🟡 Средние пароли (8-12 символов): комбинации слов, дат и символов'}
+                {difficulty === 'hard' && '🔴 Сложные пароли (12-20 символов): многоуровневые с заменами'}
+              </p>
             </div>
 
             {isGenerating && (
