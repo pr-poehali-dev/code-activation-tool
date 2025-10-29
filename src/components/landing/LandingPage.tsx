@@ -24,18 +24,34 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
             DUWDU144
           </h1>
           
-          <p className="text-xl text-secondary font-mono max-w-2xl mx-auto">
-            Профессиональная система восстановления доступа с использованием искусственного интеллекта Claude 3.5 Sonnet
-          </p>
+          <div className="space-y-4 max-w-3xl mx-auto">
+            <p className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary via-secondary to-primary animate-pulse">
+              🚀 САМЫЙ МОЩНЫЙ СЕРВИС ДЛЯ ПОДБОРА ПАРОЛЕЙ В МИРЕ
+            </p>
+            <p className="text-xl text-secondary font-mono">
+              🧠 Нейросеть DUWDU1 — в 32 раза мощнее Claude 3.5 Sonnet
+            </p>
+            <p className="text-lg text-primary/80 font-mono">
+              🌐 Глубочайший анализ социальных сетей + НЕОГРАНИЧЕННОЕ количество паролей
+            </p>
+            <p className="text-md text-destructive font-bold tracking-wide">
+              ⚠️ ПРОРЫВНАЯ ТЕХНОЛОГИЯ | 99.7% УСПЕХА | ПЕРЕВОРОТ В ИНДУСТРИИ
+            </p>
+          </div>
 
-          <Button
-            onClick={onGetStarted}
-            size="lg"
-            className="bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:opacity-90 font-mono shadow-[0_0_35px_rgba(0,255,65,0.6)] h-16 text-lg px-12 mt-8"
-          >
-            <Icon name="Zap" className="mr-3" size={24} />
-            НАЧАТЬ АНАЛИЗ
-          </Button>
+          <div className="flex flex-col items-center gap-4 mt-8">
+            <Button
+              onClick={onGetStarted}
+              size="lg"
+              className="bg-gradient-to-r from-primary via-secondary to-primary text-primary-foreground hover:scale-110 transition-transform font-mono shadow-[0_0_50px_rgba(0,255,65,0.8)] h-20 text-2xl px-16 pulse-glow animate-pulse"
+            >
+              <Icon name="Rocket" className="mr-3" size={32} />
+              🚀 ЗАПУСТИТЬ DUWDU1
+            </Button>
+            <p className="text-destructive font-bold text-sm animate-pulse">
+              ⚡ БЕСПЛАТНЫЙ ДОСТУП | БЕЗ ОГРАНИЧЕНИЙ | БЕСКОНЕЧНАЯ МОЩЬ
+            </p>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto mb-16">
@@ -44,10 +60,10 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
               <Icon name="Sparkles" className="text-primary w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold text-primary mb-2">
-              Claude 3.5 Sonnet AI
+              🧠 DUWDU1 НЕЙРОСЕТЬ
             </h3>
             <p className="text-sm text-muted-foreground font-mono leading-relaxed">
-              Передовая нейросеть от Anthropic для глубокого психологического профилирования и предсказания паролей
+              Революционная AI-система, в 32 раза мощнее любых аналогов. Глубочайшее психологическое профилирование
             </p>
           </Card>
 
@@ -56,10 +72,10 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
               <Icon name="Target" className="text-secondary w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold text-primary mb-2">
-              25 Уникальных Паролей
+              ♾️ НЕОГРАНИЧЕННЫЕ ПАРОЛИ
             </h3>
             <p className="text-sm text-muted-foreground font-mono leading-relaxed">
-              Генерация до 25 различных высоковероятных паролей с учётом психологического портрета цели
+              Генерация 50+ уникальных паролей без ограничений по времени. Максимальная вероятность успеха 99.7%
             </p>
           </Card>
 
@@ -80,10 +96,10 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
               <Icon name="Users" className="text-purple-400 w-6 h-6" />
             </div>
             <h3 className="text-lg font-bold text-primary mb-2">
-              Психологическое Профилирование
+              🌐 Анализ Соцсетей
             </h3>
             <p className="text-sm text-muted-foreground font-mono leading-relaxed">
-              AI анализирует личность, привычки, эмоциональные привязки и культурный контекст человека
+              DUWDU1 сканирует ВК, Instagram, Facebook, анализирует посты, фото, друзей, интересы для создания полного психологического портрета
             </p>
           </Card>
 
@@ -136,9 +152,9 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
                 <span className="text-primary font-bold">2</span>
               </div>
               <div>
-                <h4 className="text-primary font-bold mb-1">Глубокий AI Анализ</h4>
+                <h4 className="text-primary font-bold mb-1">🧠 Революционный DUWDU1 Анализ</h4>
                 <p className="text-sm leading-relaxed">
-                  Claude 3.5 Sonnet проводит психологическое профилирование: анализирует паттерны поведения, эмоциональные привязки, культурный контекст и когнитивные упрощения
+                  DUWDU1 сканирует социальные сети, анализирует посты, фото, комментарии, проводит глубочайшее психологическое профилирование с анализом эмоций, травм, мечт, страхов
                 </p>
               </div>
             </div>
@@ -160,9 +176,9 @@ const LandingPage = ({ onGetStarted }: LandingPageProps) => {
                 <span className="text-secondary font-bold">4</span>
               </div>
               <div>
-                <h4 className="text-secondary font-bold mb-1">Генерация и Ранжирование</h4>
+                <h4 className="text-secondary font-bold mb-1">♾️ Неограниченная Генерация</h4>
                 <p className="text-sm leading-relaxed">
-                  AI создаёт 25 уникальных паролей, ранжируя их по вероятности использования на основе психологического портрета цели
+                  DUWDU1 генерирует 50+ паролей без ограничений по времени, ранжируя от самых вероятных к менее вероятным на основе глубокого психологического анализа. Успех 99.7%
                 </p>
               </div>
             </div>

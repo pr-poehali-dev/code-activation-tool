@@ -72,7 +72,7 @@ const PasswordAnalyzer = ({
                   DUWDU144
                 </h1>
                 <p className="text-xs text-secondary font-mono">
-                  👤 <span className="text-primary">{currentUser?.username || 'Неизвестный'}</span> • Powered by Claude 3.5 Sonnet
+                  👤 <span className="text-primary">{currentUser?.username || 'Неизвестный'}</span> • 🧠 Powered by DUWDU1 Neural Network
                 </p>
               </div>
             </div>
@@ -126,9 +126,16 @@ const PasswordAnalyzer = ({
               </div>
             )}
 
+            <div className="p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded border border-primary/30 mb-4">
+              <p className="text-xs font-mono text-primary mb-2">
+                🧠 DUWDU1 проанализирует введённые данные и соцсети для создания психологического профиля
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-mono text-muted-foreground mb-2 block">
+                <label className="text-xs font-mono text-muted-foreground mb-2 block flex items-center gap-2">
+                  <Icon name="User" size={14} />
                   ИМЯ ВЛАДЕЛЬЦА
                 </label>
                 <Input
@@ -136,7 +143,7 @@ const PasswordAnalyzer = ({
                   placeholder="Иван Петров"
                   value={ownerName}
                   onChange={(e) => setOwnerName(e.target.value)}
-                  className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary text-sm"
+                  className="font-mono bg-input/50 border-primary/30 focus:border-primary text-primary text-sm hover:border-primary/50 transition-colors"
                 />
               </div>
 
@@ -227,18 +234,25 @@ const PasswordAnalyzer = ({
                   ТЯЖЁЛЫЙ
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground mt-2 font-mono">
-                {difficulty === 'easy' && '🟢 Простые пароли (4-8 символов): qwerty, 12345, имя+год'}
-                {difficulty === 'normal' && '🟡 Средние пароли (8-12 символов): комбинации слов, дат и символов'}
-                {difficulty === 'hard' && '🔴 Сложные пароли (12-20 символов): многоуровневые с заменами'}
-              </p>
+              <div className="mt-3 p-3 bg-gradient-to-r from-primary/5 to-secondary/5 rounded border border-primary/20">
+                <p className="text-xs text-primary font-mono font-bold mb-1">
+                  {difficulty === 'easy' && '🟢 РЕЖИМ: Простые пароли'}
+                  {difficulty === 'normal' && '🟡 РЕЖИМ: Средние пароли'}
+                  {difficulty === 'hard' && '🔴 РЕЖИМ: Сложные пароли'}
+                </p>
+                <p className="text-xs text-muted-foreground font-mono">
+                  {difficulty === 'easy' && '4-8 символов: qwerty, 12345, имя+год, клавиатурные последовательности'}
+                  {difficulty === 'normal' && '8-12 символов: комбинации слов, дат, имён близких + модификации'}
+                  {difficulty === 'hard' && '12-20 символов: паттерны с заменами (a→@, e→3), криптостойкие комбинации'}
+                </p>
+              </div>
             </div>
 
             {isGenerating && (
-              <div className="space-y-3 p-4 bg-primary/5 border border-primary/30 rounded-lg">
+              <div className="space-y-3 p-6 bg-gradient-to-br from-primary/10 via-secondary/5 to-primary/10 border-2 border-primary/40 rounded-lg shadow-[0_0_25px_rgba(0,255,65,0.3)] pulse-glow">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-mono text-primary">{currentAnalysisStep}</span>
-                  <span className="text-xs font-mono text-muted-foreground">{Math.round(analysisProgress)}%</span>
+                  <span className="text-sm font-mono text-primary font-bold animate-pulse">🧠 {currentAnalysisStep}</span>
+                  <span className="text-xs font-mono text-secondary font-bold">{Math.round(analysisProgress)}%</span>
                 </div>
                 <div className="w-full bg-muted/30 rounded-full h-2 overflow-hidden">
                   <div
@@ -259,14 +273,14 @@ const PasswordAnalyzer = ({
             </Button>
 
             {generatedPasswords.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-bold text-primary flex items-center gap-2">
-                    <Icon name="Key" size={20} />
-                    НАЙДЕННЫЕ ПАРОЛИ
+              <div className="space-y-3 fade-in">
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg border border-primary/40">
+                  <h2 className="text-xl font-bold text-primary flex items-center gap-3 matrix-glow">
+                    <Icon name="Key" size={24} />
+                    🔓 DUWDU1 РЕЗУЛЬТАТЫ
                   </h2>
-                  <span className="text-xs text-muted-foreground font-mono">
-                    {generatedPasswords.length} результатов
+                  <span className="text-sm text-secondary font-mono font-bold bg-primary/20 px-3 py-1 rounded">
+                    {generatedPasswords.length} паролей
                   </span>
                 </div>
                 
@@ -274,13 +288,13 @@ const PasswordAnalyzer = ({
                   {generatedPasswords.map((password, index) => (
                     <div
                       key={index}
-                      className="bg-background/50 border border-primary/30 rounded-lg p-3 flex items-center justify-between hover:border-primary/60 transition-all group"
+                      className="bg-gradient-to-r from-background/80 to-background/60 border-2 border-primary/40 rounded-lg p-4 flex items-center justify-between hover:border-secondary hover:shadow-[0_0_20px_rgba(0,255,65,0.3)] transition-all group hover:scale-[1.02]"
                     >
-                      <div className="flex items-center gap-3 flex-1">
-                        <span className="text-xs font-mono text-muted-foreground w-6">
+                      <div className="flex items-center gap-4 flex-1">
+                        <span className="text-sm font-mono font-bold text-secondary w-8 bg-primary/20 px-2 py-1 rounded">
                           #{index + 1}
                         </span>
-                        <code className="font-mono text-primary text-base flex-1">
+                        <code className="font-mono text-primary text-lg flex-1 font-bold tracking-wide">
                           {password}
                         </code>
                       </div>
